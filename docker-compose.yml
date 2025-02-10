@@ -11,7 +11,9 @@ services:
       - "5432:5432"
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     command: uvicorn app.main:app --host 0.0.0.0 --reload
     volumes:
       - ./backend:/app
