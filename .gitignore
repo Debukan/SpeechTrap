@@ -1,4 +1,6 @@
 technical_specification.md
+.env
+*.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
