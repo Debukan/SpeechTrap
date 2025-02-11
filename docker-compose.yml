@@ -27,7 +27,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: frontend/Dockerfile
     volumes:
       - ./frontend:/app
       - /app/node_nodules
