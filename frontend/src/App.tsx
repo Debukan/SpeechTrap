@@ -1,11 +1,16 @@
 import React from 'react';
-import './App.css';
+import Register from "./Components/Register";
 
 function App() {
-  return (
-    <div className="App">
+  const handleRegister = (userData: { name: string; email: string; password: string }) => {
+    console.log('Данные регистрации:', userData);
+  };
 
-    </div>
+  return (
+      <div className="App">
+        <h1>SpeechTrap</h1> {}
+        <Register onRegister={handleRegister} /> {}
+      </div>
   );
 }
 
