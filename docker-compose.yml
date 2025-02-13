@@ -23,6 +23,22 @@ services:
       - .env
     depends_on:
       - db
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_nodules
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USERPOLLING=true
+      - WDS_SOCKET_PORT=0
+    command: npm start
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
