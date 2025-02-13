@@ -9,7 +9,7 @@ class WordWithAssociations(SQLModel, table=True):
 
 
 '''
-запись в бд
+# запись в бд
 
 import json
 from sqlmodel import Session, create_engine
@@ -35,7 +35,7 @@ with Session(engine) as session:
 '''
 
 '''
-запрос на извлечение данных из модели
+# запрос на извлечение данных из модели
 
 import json
 from sqlmodel import Session, create_engine

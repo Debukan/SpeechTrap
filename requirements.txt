@@ -6,5 +6,3 @@ pydantic
 pydantic-settings~=2.7.1
 python-dotenv
 sqlmodel~=0.0.22
-requests~=2.32.3
-beautifulsoup4~=4.13.3
