@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./frontend:/app
-      - /app/node_nodules
+      - /app/node_modules
     ports:
       - "3000:3000"
     environment:
