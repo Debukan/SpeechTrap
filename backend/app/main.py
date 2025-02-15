@@ -2,9 +2,13 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.db.session import get_db
+from app.api.endpoints import users
 
 # Инициализация FastAPI приложения
 app = FastAPI()
+
+# TODO: раскоммитить когда появиться база данных пользователя
+# app.include_router(users.router, prefix="/api/users", tags=['users'])
 
 @app.get('/health')
 def health_checlk(db: Session = Depends(get_db)) -> dict:
