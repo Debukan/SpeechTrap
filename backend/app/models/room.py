@@ -26,7 +26,7 @@ class Room(SQLModel, table=True):
     max_players: int = Field(default=8)
     current_round: int = Field(default=0)
     rounds_total: int = Field(default=10)
-    created_at: datetime = Field(default_factory=datetime.time())
+    created_at: datetime = Field(default_factory=datetime.now())
 
     # Настройки игры
     time_per_round: int = Field(default=60)
