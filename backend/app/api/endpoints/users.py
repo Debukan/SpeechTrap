@@ -6,7 +6,7 @@ from app.core.security import get_password_hash, invalidate_token
 from app.schemas.user import UserCreate
 from app.schemas.auth import LogoutResponse
 # TODO: раскоммитить когда будет сделана
-# from models.user import User
+from app.models.user import User
 
 # Схема OAuth2 для получени токена из заголовка
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -26,11 +26,11 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
             status_code=400,
             detail="Пользователь с таким email уже существует"
         )
-    
+
     # Создаем нового пользователя
     user = User(
-        name = user_data.name,
-        email = user.data.email
+        name=user_data.name,
+        email=user_data.email,
         hashed_password=get_password_hash(user_data.password)
     )
 
