@@ -17,11 +17,12 @@ Base.metadata.create_all(bind=engine)
 # Фабрика сессий
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 def get_db():
     """
     Генератор сессий базы данных.
     Обеспечивает корректное закрытие сессии после использования.
-    
+
     Yields:
         Session: Сессия SQLAlchemy
     """

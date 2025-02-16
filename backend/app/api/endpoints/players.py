@@ -6,6 +6,7 @@ from app.schemas.player import PlayeCreate, PlayerResponse
 
 router = APIRouter()
 
+
 @router.post("/", response_model=PlayerResponse)
 async def create_player(player: PlayeCreate, db: Session = Depends(get_db)):
     db_player = Player(**player.dict())

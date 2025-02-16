@@ -5,17 +5,21 @@ from enum import Enum
 from app.models.room import Room
 from app.models.user import User
 
+
 class PlayerRole(str, Enum):
     """Роли игрока в игре"""
+
     EXPLAINING = "explaining"
     GUESSING = "guessing"
     WAITING = "waiting"
+
 
 class Player(SQLModel, table=True):
     """
     Модель игрока в комнате.
     Связывает пользователя с игровой комнатой и хранит игровую статистику.
     """
+
     __tablename__ = "players"
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id")
@@ -32,7 +36,6 @@ class Player(SQLModel, table=True):
     user: "User" = Relationship(back_populates="players")
     room: "Room" = Relationship(back_populates="players")
 
-
     def update_score(self, points: int) -> None:
         """Обновление очков игрока"""
         self.score += points
@@ -40,7 +43,7 @@ class Player(SQLModel, table=True):
     def change_role(self, new_role: PlayerRole) -> None:
         """Изменение роли игрока"""
         self.role = new_role
-    
+
     @property
     def success_rate(self) -> float:
         """Процент успешных ответов"""

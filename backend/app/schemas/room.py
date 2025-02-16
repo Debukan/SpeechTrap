@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from app.models.room import GameStatus
 
+
 class RoomBase(BaseModel):
     name: str
     max_players: int = 8

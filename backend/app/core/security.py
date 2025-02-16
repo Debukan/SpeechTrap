@@ -6,22 +6,30 @@ from pydantic import BaseModel
 from app.core.config import settings
 
 # Настройки шифрования паролей
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Настройки JWT
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
+# Хранение недействительных токенов
+blacklisted_tokens = set()
+
+
 class Token(BaseModel):
     """Схема токена"""
+
     access_token: str
     token_type: str = "bearer"
 
+
 class TokenData(BaseModel):
     """Данные токена"""
+
     email: str | None = None
     exp: datetime | None = None
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -35,6 +43,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password: str) -> str:
     """
     Хеширование пароля
@@ -44,6 +53,7 @@ def get_password_hash(password: str) -> str:
         str: Хеш пароля
     """
     return pwd_context.hash(password)
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
@@ -62,11 +72,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.now() + expires_delta
     else:
         expire = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
-    
+
     return encoded_jwt
+
 
 def decode_access_token(token: str) -> dict:
     """
@@ -81,12 +92,22 @@ def decode_access_token(token: str) -> dict:
     """
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get('sub')
-        exp: datetime = datetime.fromtimestamp(payload.get('exp'))
+        email: str = payload.get("sub")
+        exp: datetime = datetime.fromtimestamp(payload.get("exp"))
 
         if email is None:
             return None
-        
+
         return TokenData(email=email, exp=exp)
     except jwt.InvalidTokenError:
         return None
+
+
+def invalidate_token(token: str) -> None:
+    """Добавление токена в черный список"""
+    blacklisted_tokens.add(token)
+
+
+def is_token_valid(token: str) -> bool:
+    """Проверка валидности токена"""
+    return token not in blacklisted_tokens

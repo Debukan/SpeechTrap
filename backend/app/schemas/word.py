@@ -1,13 +1,16 @@
 from pydantic import BaseModel
 from typing import List
 
+
 class WordBase(BaseModel):
     word: str
     category: str
     associations: List[str]
 
+
 class WordCreate(WordBase):
     room_id: int
+
 
 class WordResponse(WordBase):
     id: int

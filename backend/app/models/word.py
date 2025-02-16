@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 from app.models.room import Room
 
+
 class WordWithAssociations(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     word: str = Field(index=True)
@@ -22,11 +23,16 @@ class WordWithAssociations(SQLModel, table=True):
         """Обновление статистики использования слова"""
         self.times_used += 1
         if success:
-            self.success_rate = ((self.success_rate * (self.times_used - 1)) + 1) / self.times_used
+            self.success_rate = (
+                (self.success_rate * (self.times_used - 1)) + 1
+            ) / self.times_used
         else:
-            self.success_rate = (self.success_rate * (self.times_used - 1)) / self.times_used
+            self.success_rate = (
+                self.success_rate * (self.times_used - 1)
+            ) / self.times_used
 
-'''
+
+"""
 # запись в бд
 
 import json
@@ -50,9 +56,9 @@ with Session(engine) as session:
             session.add(word_entry)
     session.commit()
 
-'''
+"""
 
-'''
+"""
 # запрос на извлечение данных из модели
 
 import json
@@ -68,4 +74,4 @@ with Session(engine) as session:
     results = session.exec(WordWithAssociations.select()).all()
     for entry in results:
         print(f"{entry.category}: {entry.word} -> {', '.join(entry.associations)}")
-'''
+"""

@@ -1,16 +1,19 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from pathlib import Path
+
 """
 Модуль конфигурации приложения.
 Содержит настройки подключения к базе данных и другие параметры.
 """
+
 
 class Settings(BaseSettings):
     """
     Класс настроек приложения.
     Загружает конфигурацию из переменных окружения.
     """
+
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -25,7 +28,7 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         """
         Формирует URL для подключения к PostgreSQL.
-        
+
         Returns:
             str: URL подключения к базе данных
         """
@@ -35,15 +38,15 @@ class Settings(BaseSettings):
         env_file = str(Path(__file__).resolve().parents[2] / ".env")
 
 
-
 @lru_cache()
 def get_settings() -> Settings:
     """
     Создает и кеширует экземпляр настроек.
-    
+
     Returns:
         Settings: Объект настроек приложения
     """
     return Settings()
+
 
 settings = get_settings()

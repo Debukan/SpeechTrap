@@ -10,11 +10,12 @@ app = FastAPI()
 # TODO: раскоммитить когда появиться база данных пользователя
 # app.include_router(users.router, prefix="/api/users", tags=['users'])
 
-@app.get('/health')
+
+@app.get("/health")
 def health_checlk(db: Session = Depends(get_db)) -> dict:
     """
     Проверяет работоспособность API и подключение к базе данных.
-    
+
     Args:
         db: Сессия базы данных
     Returns:
