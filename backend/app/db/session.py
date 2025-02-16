@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
-from sqlalchemy import declarative_base
 
 """
 Модуль настройки сессии базы данных.
@@ -14,8 +13,6 @@ engine = create_engine(settings.DATABASE_URL)
 # Фабрика сессий
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Создаем объект Base
-Base = declarative_base()
 
 def get_db():
     """

@@ -4,12 +4,12 @@ from app.db.session import get_db
 from app.core.security import get_password_hash
 from app.schemas.user import UserCreate
 # TODO: раскоммитить когда будет сделана
-from models.user import User
+from app.models.user import User
 
 router = APIRouter()
 
 @router.post('/register', response_model=UserCreate)
-async def register_user(user_data: UserCreate, db: Session = Depends(get_db))
+async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Регистрация нового пользователя
 
@@ -24,8 +24,8 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db))
 
     # Создаем нового пользователя
     user = User(
-        name = user_data.name,
-        email = user.data.email
+        name=user_data.name,
+        email=user_data.email,
         hashed_password=get_password_hash(user_data.password)
     )
 
