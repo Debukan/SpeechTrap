@@ -4,7 +4,7 @@ from app.db.session import get_db
 from app.core.security import get_password_hash
 from app.schemas.user import UserCreate
 # TODO: раскоммитить когда будет сделана
-# from models.user import User
+from models.user import User
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db))
             status_code=400,
             detail="Пользователь с таким email уже существует"
         )
-    
+
     # Создаем нового пользователя
     user = User(
         name = user_data.name,
