@@ -26,15 +26,14 @@ class Room(SQLModel, table=True):
     max_players: int = Field(default=8)
     current_round: int = Field(default=0)
     rounds_total: int = Field(default=10)
-    created_at: datetime = Field(default_factory=datetime.now())
+    created_at: datetime = Field(default_factory=datetime.now)
 
     # Настройки игры
     time_per_round: int = Field(default=60)
 
-    # TODO Связи с другими таблицами
-    # players: List['PLayer'] = Relationship(back_populates='room')
-    # words: List["Word"] = Relationship(back_populates="room")
-    # current_word_id: Optional[int] = Field(default=None, foreign_key="words.id")
+    players: List['PLayer'] = Relationship(back_populates='room')
+    words: List["Word"] = Relationship(back_populates="room")
+    current_word_id: Optional[int] = Field(default=None, foreign_key="words.id")
 
 
     def is_full(self) -> bool:
