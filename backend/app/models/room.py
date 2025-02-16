@@ -2,6 +2,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
+from app.models.player import Player
+from app.models.word import WordWithAssociations
 
 
 class GameStatus(str, Enum):
@@ -31,8 +33,8 @@ class Room(SQLModel, table=True):
     # Настройки игры
     time_per_round: int = Field(default=60)
 
-    players: List['PLayer'] = Relationship(back_populates='room')
-    words: List["Word"] = Relationship(back_populates="room")
+    players: List["Player"] = Relationship(back_populates='room')
+    words: List["WordWithAssociations"] = Relationship(back_populates="room")
     current_word_id: Optional[int] = Field(default=None, foreign_key="words.id")
 
 

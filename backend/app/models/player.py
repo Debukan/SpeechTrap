@@ -2,6 +2,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from datetime import datetime
 from enum import Enum
+from app.models.room import Room
+from app.models.user import User
 
 class PlayerRole(str, Enum):
     """Роли игрока в игре"""
