@@ -26,13 +26,13 @@ class Room(SQLModel, table=True):
     max_players: int = Field(default=8)
     current_round: int = Field(default=0)
     rounds_total: int = Field(default=10)
-    created_at: datetime = Field(default_factory=datetime.time())
+    created_at: datetime = Field(default_factory=datetime.now)  # Исправлено
 
     # Настройки игры
     time_per_round: int = Field(default=60)
 
     # TODO Связи с другими таблицами
-    # players: List['PLayer'] = Relationship(back_populates='room')
+    # players: List['Player'] = Relationship(back_populates='room')
     # words: List["Word"] = Relationship(back_populates="room")
     # current_word_id: Optional[int] = Field(default=None, foreign_key="words.id")
 
@@ -45,6 +45,6 @@ class Room(SQLModel, table=True):
         """Проверка, можно ли начать игру"""
         return (
             self.status == GameStatus.WAITING and
-            hasattr(self, 'players') and 
+            hasattr(self, 'players') and
             len(self.players) >= 2
         )

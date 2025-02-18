@@ -1,5 +1,5 @@
 technical_specification.md
-.env
+backend/.env
 *.env
 
 # Byte-compiled / optimized / DLL files
@@ -132,7 +132,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+backend/.env
 .venv
 env/
 venv/
