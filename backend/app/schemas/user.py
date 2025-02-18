@@ -25,3 +25,10 @@ class UserResponse(UserBase):
 
     class Config:
         orm_mode = True
+
+
+class UserLogin(BaseModel):
+    """Схема для авторизации пользователя."""
+
+    email: EmailStr
+    password: str = Field(..., min_length=8)

@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+from app.core.security import verify_password, get_password_hash
 
 
 class User(SQLModel, table=True):
@@ -11,3 +12,11 @@ class User(SQLModel, table=True):
     name: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = Field(default=True)
+
+    def check_password(self, password: str) -> bool:
+        """Метод для проверки пароля"""
+        return verify_password(password, self.hashed_password)
+
+    def set_password(self, password: str):
+        """Метод для хеширования пароля"""
+        self.hashed_password = get_password_hash(password)
