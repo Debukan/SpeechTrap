@@ -2,16 +2,18 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.core.security import get_password_hash, invalidate_token
-from app.schemas.user import UserCreate
+from app.core.security import get_password_hash, invalidate_token, create_access_token
+from app.schemas.user import UserCreate, UserLogin
 from app.schemas.auth import LogoutResponse
-# TODO: раскоммитить когда будет сделана
 from app.models.user import User
+from app.schemas.auth import Token
+from datetime import timedelta
 
 # Схема OAuth2 для получени токена из заголовка
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
+
 
 @router.post('/register', response_model=UserCreate)
 async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -30,14 +32,13 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     # Создаем нового пользователя
     user = User(
         name=user_data.name,
-        email=user_data.email,
-        hashed_password=get_password_hash(user_data.password)
-    )
+        email=user_data.email)
+    user.set_password(user_data.password)
 
     try:
         db.add(user)
         db.commit()
-        db.refresh()
+        db.refresh(user)
         return user_data
     except Exception as e:
         db.rollback()
@@ -45,7 +46,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
             status_code=500,
             detail="Ошибка при регистрации пользователя"
         )
-    
+
 
 @router.post("/logout", response_model=LogoutResponse)
 async def logout(token: str = Depends(oauth2_scheme)):
@@ -62,6 +63,39 @@ async def logout(token: str = Depends(oauth2_scheme)):
         return LogoutResponse(message="Успешный выход из системы")
     except Exception as e:
         raise HTTPException(
-            status_cod=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Ошибка при выходе из системы"
+        )
+
+
+@router.post("/login", response_model=Token)
+def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
+    """
+    Аутентификация пользователя по email и паролю.
+
+    Если пользователь прошел проверку, возвращается JWT токен для дальнейшего использования.
+    """
+    try:
+        # Поиск пользователя по email
+        user = db.query(User).filter(User.email == user_data.email).first()
+
+        # Если пользователь не найден или пароль неверный
+        if not user or not user.check_password(user_data.password):
+            raise HTTPException(
+                status_code=401,
+                detail="Неверные данные"
+            )
+
+        # Генерация JWT токена
+        access_token = create_access_token(
+            data={"sub": user.email},
+            expires_delta=timedelta(minutes=30)
+        )
+
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка при аутентификации"
         )
