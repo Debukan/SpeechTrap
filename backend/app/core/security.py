@@ -3,7 +3,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 import jwt
 from pydantic import BaseModel
+from fastapi import HTTPException, Depends, status
+from sqlmodel import select
+from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
+from app.models.user import User
+from app.db.session import get_db
 
 # Настройки шифрования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -12,9 +18,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-
 # Хранение недействительных токенов
 blacklisted_tokens = set()
+
+# Определение способа получения токена
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 class Token(BaseModel):
@@ -111,3 +119,59 @@ def invalidate_token(token: str) -> None:
 def is_token_valid(token: str) -> bool:
     """Проверка валидности токена"""
     return token not in blacklisted_tokens
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    """
+    Получает текущего пользователя по JWT токену.
+
+    Args:
+        token (str): JWT токен пользователя.
+        db (Session): Сессия базы данных.
+    Returns:
+        User: Объект пользователя, если токен действителен.
+    Raises:
+        HTTPException: 401 если токен недействителен или пользователь не найден.
+    """
+
+    # Проверка валидности токена
+    if not is_token_valid(token):
+        raise HTTPException(status_code=401, detail="Токен недействителен")
+
+    # Декодирование данных из токена
+    token_data = decode_access_token(token)
+    if not token_data or not token_data.email:
+        raise HTTPException(status_code=401, detail="Неверные учетные данные")
+
+    # Поиск пользователя в базе данных по email
+    user = get_user_from_db(token_data.email, db)
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не найден",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user
+
+
+def get_user_from_db(email: str, db: Session) -> User:
+    """
+    Поиск пользователя по email в базе данных.
+
+    Args:
+        email (str): Электронная почта пользователя.
+        db (Session): Сессия базы данных.
+
+    Returns:
+        User: Объект пользователя, если он найден в базе данных, иначе None.
+    """
+
+    statement = select(User).where(User.email == email)
+    user = db.exec(statement).first()
+
+    if user is None:
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
+
+    return user
