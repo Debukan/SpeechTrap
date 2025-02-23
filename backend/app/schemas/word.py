@@ -8,8 +8,8 @@ class WordBase(BaseModel):
     associations: List[str]
 
 
-class WordCreate(WordBase):
-    room_id: int
+# class WordCreate(WordBase):
+#     room_id: int
 
 
 class WordResponse(WordBase):

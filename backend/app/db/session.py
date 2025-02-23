@@ -2,6 +2,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.db.base import Base
+import time
+from sqlalchemy.exc import OperationalError
 
 """
 Модуль настройки сессии базы данных.
@@ -12,7 +14,16 @@ from app.db.base import Base
 engine = create_engine(settings.DATABASE_URL)
 
 # Создание таблиц
-Base.metadata.create_all(bind=engine)
+max_attempts = 10
+for attempt in range(max_attempts):
+    try:
+        Base.metadata.create_all(bind=engine)
+        break
+    except OperationalError as e:
+        if attempt == max_attempts - 1:
+            raise
+        print(f"Waiting for db... Attempt {attempt + 1}/{max_attempts}: {e}")
+        time.sleep(2)
 
 # Фабрика сессий
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

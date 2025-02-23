@@ -37,7 +37,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         db.add(user)
         db.commit()
-        db.refresh()
+        db.refresh(user)
         return user_data
     except Exception as e:
         db.rollback()
@@ -62,6 +62,6 @@ async def logout(token: str = Depends(oauth2_scheme)):
         return LogoutResponse(message="Успешный выход из системы")
     except Exception as e:
         raise HTTPException(
-            status_cod=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Ошибка при выходе из системы"
         )

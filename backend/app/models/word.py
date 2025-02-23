@@ -1,23 +1,22 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime
-from app.models.room import Room
+from sqlalchemy import Column, JSON
+from app.models.base import Base
 
 
 class WordWithAssociations(SQLModel, table=True):
+    __tablename__ = "words"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     word: str = Field(index=True)
     category: str = Field(index=True)
-    associations: List[str] = Field(sa_column_kwargs={"type_": "JSON"})
+    associations: List[str] = Field(sa_column=Column(JSON), default=[])
 
     # Статистика
     is_active: bool = Field(default=True)
     times_used: int = Field(default=0)
     success_rate: float = Field(default=0.0)
-
-    # Связь с комнатой
-    room_id: Optional[int] = Field(default=None, foreign_key="rooms.id")
-    room: "Room" = Relationship(back_populates="words")
 
     def update_stats(self, success: bool) -> None:
         """Обновление статистики использования слова"""
