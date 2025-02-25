@@ -11,7 +11,7 @@ from sqlalchemy.exc import OperationalError
 """
 
 # Создаем движок SQLAlchemy
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.DATABASE_URL, connect_args={"options": "-c client_encoding=utf8"})
 
 # Создание таблиц
 max_attempts = 10
