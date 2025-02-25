@@ -18,7 +18,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U speechtrap"
+          --health-cmd "pg_isready -U speechtrap -d speechtrap_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -37,14 +37,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
       
-      - name: Wait for PostgreSQL
+      - name: Check PostgreSQL service logs
+        run: |
+          docker ps -a
+          docker logs $(docker ps -a -q --filter "ancestor=postgres:latest" --latest)
+      
+      - name: Wait for PostgreSQL and test connection
         run: |
           for i in {1..30}; do
-            if pg_isready -h test-db -U speechtrap -d speechtrap_test; then
+            if pg_isready -h test-db -p 5432 -U speechtrap -d speechtrap_test; then
               echo "Database is ready!"
               break
+            else
+              echo "Waiting for database... ($i/30)"
+              psql -h test-db -p 5432 -U speechtrap -d speechtrap_test -c "SELECT 1;" || echo "Connection failed"
             fi
-            echo "Waiting for database... ($i/30)"
             sleep 2
           done
       
