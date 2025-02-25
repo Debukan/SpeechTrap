@@ -43,6 +43,9 @@ jobs:
           POSTGRES_DB: speechtrap_test
           POSTGRES_USER: speechtrap
           POSTGRES_PASSWORD: speechtrap
-          POSTGRES_SERVER: localhost
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+
         run: |
           pytest -v --cov=app --cov-report=term-missing
