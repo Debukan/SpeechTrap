@@ -45,12 +45,15 @@ jobs:
       - name: Wait for PostgreSQL and test connection
         run: |
           for i in {1..30}; do
-            if pg_isready -h test-db -p 5432 -U speechtrap -d speechtrap_test; then
+            echo "Attempt $i/30: Checking localhost:5432..."
+            if pg_isready -h localhost -p 5432 -U speechtrap -d speechtrap_test; then
               echo "Database is ready!"
+              psql -h localhost -p 5432 -U speechtrap -d speechtrap_test -c "SELECT 1;" && echo "Connection successful!"
               break
             else
-              echo "Waiting for database... ($i/30)"
-              psql -h test-db -p 5432 -U speechtrap -d speechtrap_test -c "SELECT 1;" || echo "Connection failed"
+              echo "Database not ready yet."
+              pg_isready -h localhost -p 5432 -U speechtrap -d speechtrap_test || echo "pg_isready failed"
+              psql -h localhost -p 5432 -U speechtrap -d speechtrap_test -c "SELECT 1;" || echo "psql failed with: $?"
             fi
             sleep 2
           done
