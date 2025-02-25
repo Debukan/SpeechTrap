@@ -7,9 +7,17 @@ from app.core.config import settings
 from app.main import app
 from app.db.session import get_db
 import asyncio
+import os
+
+IS_CI = os.getenv("CI") == "true"
 
 # Тестовая БД
-SQLALCHEMY_TEST_DATABASE_URL = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@test-db:5432/{settings.POSTGRES_DB}_test"
+SQLALCHEMY_TEST_DATABASE_URL = (
+    f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}"
+    f"@{os.getenv('POSTGRES_HOST', 'test-db' if not IS_CI else 'localhost')}:"
+    f"{os.getenv('POSTGRES_PORT')}/"
+    f"{os.getenv('POSTGRES_DB')}"
+)
 engine = create_engine(SQLALCHEMY_TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

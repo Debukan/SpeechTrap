@@ -48,6 +48,8 @@ services:
       - db
       - backend
       - test-db
+    env_file:
+      - ./backend/tests/.env.test
     restart: "no"
 
   test-db:
@@ -55,9 +57,7 @@ services:
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     env_file:
-      - .env
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}_test
+      - ./backend/tests/.env.test
     ports:
       - "5433:5432"
 
