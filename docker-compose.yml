@@ -1,4 +1,3 @@
-
 services:
   db:
     image: postgres:13
@@ -38,6 +37,30 @@ services:
     command: npm start
     depends_on:
       - backend
+  
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - backend
+      - test-db
+    env_file:
+      - ./backend/tests/.env.test
+    restart: "no"
+
+  test-db:
+    image: postgres:13
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/tests/.env.test
+    ports:
+      - "5433:5432"
 
 volumes:
   postgres_data:
+  postgres_test_data:

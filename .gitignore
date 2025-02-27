@@ -2,6 +2,7 @@ technical_specification.md
 backend/.env
 *.env
 .idea
+.pytest_cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

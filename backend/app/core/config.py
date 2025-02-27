@@ -34,6 +34,16 @@ class Settings(BaseSettings):
         """
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
+    @property
+    def TEST_DATABASE_URL(self) -> str:
+        """
+        Формирует URL для подключения к тестовой PostgreSQL базе данных.
+
+        Returns:
+            str: URL подключения к тестовой базе данных
+        """
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}_test"
+
     class Config:
         env_file = str(Path(__file__).resolve().parents[2] / ".env")
 
