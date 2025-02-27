@@ -1,5 +1,5 @@
 technical_specification.md
-.env
+backend/.env
 *.env
 .idea
 
@@ -133,7 +133,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+backend/.env
 .venv
 env/
 venv/
