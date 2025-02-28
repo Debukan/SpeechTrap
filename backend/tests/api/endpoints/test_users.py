@@ -2,6 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 from app.core.security import create_access_token
 from app.main import app
+import logging
+
+logger = logging.getLogger(__name__)
 
 def test_register_user(client):
     response = client.post(
@@ -49,3 +52,15 @@ def test_logout(client):
     )
     assert response.status_code == 200
     assert response.json()["message"] == "Успешный выход из системы"
+
+def test_login_wrong_credentials(client):
+    response = client.post(
+        "/users/login",
+        json={
+            "email": "wrong@example.com",
+            "password": "wrongpassword"
+        }
+    )
+
+    assert response.status_code == 401
+    assert response.json()['detail'] == "Неверные данные"
