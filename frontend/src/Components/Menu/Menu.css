@@ -1,39 +1,10 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-}
-
-.navbar {
     background: linear-gradient(90deg, #ff0000, #0000ff, #800080);
-    color: white;
 }
 
-.navbar-brand,
-.nav-link {
-    color: white !important;
-}
 
-.nav-link:hover {
-    color: #ffe600 !important;
-}
-
-.dropdown-item {
-    color: #000;
-}
-
-.dropdown-item:hover {
-    background-color: rgba(255, 255, 255, 0.8);
-}
-
-.btn-outline-success {
-    border-color: #ff0000;
-    color: #ff0000;
-}
-
-.btn-outline-success:hover {
-    background-color: rgba(255, 0, 0, 0.2);
-}
 
 button {
     margin: 10px;
@@ -44,6 +15,7 @@ button {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
+    display: block;
 }
 
 button:hover {
