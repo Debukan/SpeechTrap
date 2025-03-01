@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import "./CreateRoom.css"
 const CreateRoom = () => {
     const [roomName, setRoomName] = useState('');
     const [maxPlayers, setMaxPlayers] = useState(2);
