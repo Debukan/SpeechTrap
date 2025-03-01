@@ -5,7 +5,7 @@ interface ChrProps {
     isOpen: boolean;
 }
 
-const Chr: React.FC<ChrProps> = ({ isOpen }) => {
+const ChooseRoom: React.FC<ChrProps> = ({ isOpen }) => {
     return (
         <>
             <h1>Комнаты</h1>
@@ -17,4 +17,4 @@ const Chr: React.FC<ChrProps> = ({ isOpen }) => {
 );
 }
 
-export default Chr;
+export default ChooseRoom;

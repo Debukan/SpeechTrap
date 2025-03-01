@@ -5,9 +5,9 @@ interface PofasProps {
     isOpen: boolean;
 }
 
-const pofas: React.FC<PofasProps> = ({ isOpen }) => {
+const Pofas: React.FC<PofasProps> = ({ isOpen }) => {
     return (
-
+        <>
             {isOpen && (
                 <nav className="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="red">
                     <div className="container-fluid">
@@ -52,8 +52,8 @@ const pofas: React.FC<PofasProps> = ({ isOpen }) => {
                 </div>
             </nav>
         )}
-        
+        </>
 );
 }
 
-export default pofas;
+export default Pofas;
