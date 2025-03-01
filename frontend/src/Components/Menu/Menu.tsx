@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Menu.css';
 
 interface MenuProps {
@@ -6,10 +7,11 @@ interface MenuProps {
 }
 
 const Menu: React.FC<MenuProps> = ({ isOpen }) => {
+    const navigate = useNavigate();
+
     return (
         <>
-
-            <button>Создать комнату</button>
+            <button onClick={() => navigate('/createroom')}>Создать комнату</button>
             <button>Присоединиться к комнате</button>
         </>
     );
