@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.db.session import get_db
 from app.api.endpoints import users
+from app.api.endpoints import rooms
 from app.models.word import WordWithAssociations
 from app.routes.word import router as word_router
 from app.db.session import engine
@@ -32,6 +33,7 @@ app = FastAPI()
 
 # TODO: раскоммитить когда появиться база данных пользователя
 app.include_router(users.router, prefix="/users", tags=['users'])
+app.include_router(rooms.router, prefix="/rooms", tags=['rooms'])
 app.include_router(word_router)
 
 @app.get("/health")

@@ -1,5 +1,5 @@
 technical_specification.md
-.env
+backend/.env
 *.env
 .idea
 .pytest_cache
@@ -134,7 +134,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+backend/.env
 .venv
 env/
 venv/

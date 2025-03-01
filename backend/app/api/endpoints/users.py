@@ -8,6 +8,9 @@ from app.schemas.auth import LogoutResponse
 from app.models.user import User
 from app.schemas.auth import Token
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Схема OAuth2 для получени токена из заголовка
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -75,27 +78,28 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
 
     Если пользователь прошел проверку, возвращается JWT токен для дальнейшего использования.
     """
-    try:
-        # Поиск пользователя по email
-        user = db.query(User).filter(User.email == user_data.email).first()
-
-        # Если пользователь не найден или пароль неверный
-        if not user or not user.check_password(user_data.password):
-            raise HTTPException(
-                status_code=401,
-                detail="Неверные данные"
-            )
-
-        # Генерация JWT токена
-        access_token = create_access_token(
-            data={"sub": user.email},
-            expires_delta=timedelta(minutes=30)
-        )
-
-        return {"access_token": access_token, "token_type": "bearer"}
-
-    except Exception as e:
+    # Поиск пользователя по email
+    user = db.query(User).filter(User.email == user_data.email).first()
+    
+    # Если пользователь не найден
+    if not user:
+        logger.info("Пользователь не найден")
         raise HTTPException(
-            status_code=500,
-            detail="Ошибка при аутентификации"
+            status_code=401,
+            detail="Неверные данные"
         )
+    
+    # Если пароль неверный
+    if not user.check_password(user_data.password):
+        raise HTTPException(
+            status_code=401,
+            detail="Неверные данные"
+        )
+
+    # Генерация JWT токена
+    access_token = create_access_token(
+        data={"sub": user.email},
+        expires_delta=timedelta(minutes=30)
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
