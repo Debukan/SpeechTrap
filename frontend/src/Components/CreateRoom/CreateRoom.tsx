@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./CreateRoom.css"
+
 const CreateRoom = () => {
     const [roomName, setRoomName] = useState('');
     const [maxPlayers, setMaxPlayers] = useState(2);
@@ -18,7 +19,7 @@ const CreateRoom = () => {
             difficulty,
         };
         console.log('Создана комната:', roomData);
-        navigate('/game'); // Здесь можно заменить на нужный путь
+        navigate('/game');
     };
 
     return (
@@ -26,41 +27,54 @@ const CreateRoom = () => {
             <h1>Создание комнаты</h1>
             <label>
                 Имя комнаты:
-                <input type="text" value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+                <input
+                    type="text"
+                    value={roomName}
+                    onChange={(e) => setRoomName(e.target.value)}
+                />
             </label>
             <label>
-                Количество игроков:
+                Количество игроков: {maxPlayers}
                 <input
-                    type="number"
+                    type="range"
+                    className="slider"
                     value={maxPlayers}
-                    min={2}
-                    max={6}
+                    min="2"
+                    max="6"
+                    step="1"
                     onChange={(e) => setMaxPlayers(Number(e.target.value))}
                 />
             </label>
             <label>
-                Таймер на раунд (минуты):
+                Таймер на раунд (минуты): {roundTime}
                 <input
-                    type="number"
+                    type="range"
+                    className="slider"
                     value={roundTime}
-                    min={1}
-                    max={5}
+                    min="1"
+                    max="5"
+                    step="1"
                     onChange={(e) => setRoundTime(Number(e.target.value))}
                 />
             </label>
             <label>
-                Количество раундов:
+                Количество раундов: {rounds}
                 <input
-                    type="number"
+                    type="range"
+                    className="slider"
                     value={rounds}
-                    min={1}
-                    max={10}
+                    min="1"
+                    max="10"
+                    step="1"
                     onChange={(e) => setRounds(Number(e.target.value))}
                 />
             </label>
             <label>
                 Сложность:
-                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                >
                     <option value="basic">Базовый</option>
                     <option value="medium">Средний</option>
                     <option value="hard">Сложный</option>
