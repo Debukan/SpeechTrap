@@ -7,12 +7,14 @@ services:
       - .env
     ports:
       - "5432:5432"
+    networks:
+      - app-network
 
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 4
     volumes:
       - ./backend:/app
     ports:
@@ -36,34 +38,32 @@ services:
     environment:
       - CHOKIDAR_USERPOLLING=true
       - WDS_SOCKET_PORT=0
-    command: npm start
+    command: npm run build
     depends_on:
       - backend
     networks:
       - app-network
-  
-  backend-test:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.test
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - db
-      - backend
-      - test-db
-    env_file:
-      - ./backend/tests/.env.test
-    restart: "no"
 
-  test-db:
-    image: postgres:13
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-    env_file:
-      - ./backend/tests/.env.test
+  nginx:
+    image: nginx:alpine
     ports:
-      - "5433:5432"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./frontend/build:/usr/share/nginx/html
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      app-network:
+        aliases:
+          - nginx
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   speechtrap_postgres_data:
