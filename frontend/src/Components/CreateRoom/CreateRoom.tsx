@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import "./CreateRoom.css"
+import "./CreateRoom.css";
 
 const CreateRoom = () => {
     const [roomName, setRoomName] = useState('');
@@ -18,8 +18,8 @@ const CreateRoom = () => {
             rounds,
             difficulty,
         };
-        console.log('Создана комната:', roomData);
-        navigate('/game');
+        const roomId = '12345'; //это просто пример, по факту здесь будет от сервера
+        navigate(`/room/${roomId}`);
     };
 
     return (
