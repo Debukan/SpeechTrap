@@ -6,9 +6,9 @@ services:
     env_file:
       - .env
     ports:
-      - "5432:5432"
+      - "5434:5432"
     networks:
-      - app-network
+      - speechtrap-network
 
   backend:
     build:
@@ -24,7 +24,7 @@ services:
     depends_on:
       - db
     networks:
-      - app-network
+      - speechtrap-network
   
   frontend:
     build:
@@ -32,37 +32,15 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "3000:3000"
-    environment:
-      - CHOKIDAR_USERPOLLING=true
-      - WDS_SOCKET_PORT=0
-    command: npm run build
+      - /var/www/speechtrap/frontend/build:/frontend/build
+    command: sh -c "npm run build && cp -r build/* /frontend/build"
     depends_on:
       - backend
     networks:
-      - app-network
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./certs:/etc/nginx/certs
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./frontend/build:/usr/share/nginx/html
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      app-network:
-        aliases:
-          - nginx
+      - speechtrap-network
 
 networks:
-  app-network:
+  speechtrap-network:
     driver: bridge
 
 volumes:
