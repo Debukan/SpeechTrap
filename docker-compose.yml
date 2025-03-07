@@ -36,6 +36,7 @@ services:
     environment:
       - CHOKIDAR_USERPOLLING=true
       - WDS_SOCKET_PORT=0
+      - REACT_APP_API_URL=http://localhost:8001
     command: npm start
     depends_on:
       - backend
