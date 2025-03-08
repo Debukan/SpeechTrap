@@ -3,14 +3,18 @@ import json
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.db.session import get_db
-from app.api.endpoints import users
-from app.api.endpoints import rooms
+from app.db.session import get_db, engine
 from app.models.word import WordWithAssociations
-from app.routes.word import router as word_router
-from app.db.session import engine
 
+# Импортируем роутеры
+from app.api.endpoints import users, rooms, join_room  # Добавили join_room
+from app.routes.word import router as word_router
+
+# Функция для загрузки начальных данных (слов) в базу данных
 def load_data():
+    """
+    Загружает слова и ассоциации из файла words.json в базу данных.
+    """
     with open("words.json", "r", encoding="utf-8") as file:
         data = json.load(file)
 
@@ -31,10 +35,11 @@ load_data()
 # Инициализация FastAPI приложения
 app = FastAPI()
 
-# TODO: раскоммитить когда появиться база данных пользователя
-app.include_router(users.router, prefix="/users", tags=['users'])
-app.include_router(rooms.router, prefix="/rooms", tags=['rooms'])
-app.include_router(word_router)
+# Подключаем роутеры
+app.include_router(users.router, prefix="/users", tags=['users'])  # Роутер для пользователей
+app.include_router(rooms.router, prefix="/rooms", tags=['rooms'])  # Роутер для комнат
+app.include_router(join_room.router, prefix="/join", tags=['join'])  # Роутер для присоединения к комнате
+app.include_router(word_router)  # Роутер для работы со словами
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)) -> dict:
@@ -43,6 +48,7 @@ def health_check(db: Session = Depends(get_db)) -> dict:
 
     Args:
         db: Сессия базы данных
+
     Returns:
         dict: Статус работоспособности сервиса
     """
