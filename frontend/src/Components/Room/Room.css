@@ -28,3 +28,12 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    padding: 5px 0;
+}

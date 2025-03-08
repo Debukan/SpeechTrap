@@ -3,6 +3,9 @@ backend/.env
 *.env
 .idea
 .pytest_cache
+certs
+nginx
+node_modules
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

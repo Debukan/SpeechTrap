@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './Register.css';
 
 interface RegisterProps {
     onRegister: (userData: { name: string; email: string; password: string }) => void;
