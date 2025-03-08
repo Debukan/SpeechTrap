@@ -31,7 +31,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     volumes:
-      - ./frontend:/app
       - /var/www/speechtrap/frontend/build:/frontend/build
     command: sh -c "npm run build && cp -r build/* /frontend/build"
     depends_on:
