@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.player import Player
-from app.schemas.player import PlayeCreate, PlayerResponse
+from app.schemas.player import PlayerCreate, PlayerResponse
 
 router = APIRouter()
 
