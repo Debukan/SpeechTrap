@@ -8,6 +8,7 @@ from app.models.room import Room, GameStatus
 
 router = APIRouter()
 
+
 @router.post("/rooms/", response_model=Room)
 def create_room(room: Room, db: Session = Depends(get_db)):
     """Создание новой игровой комнаты.
