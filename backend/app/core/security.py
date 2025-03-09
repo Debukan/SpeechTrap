@@ -8,7 +8,7 @@ from sqlmodel import select
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
-from app.models.user import User
+import app.models.user
 from app.db.session import get_db
 
 # Настройки шифрования паролей
@@ -119,7 +119,7 @@ def is_token_valid(token: str) -> bool:
     return token not in blacklisted_tokens
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> app.models.user.User:
     """
     Получает текущего пользователя по JWT токену.
 
@@ -154,7 +154,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-def get_user_from_db(email: str, db: Session) -> User:
+def get_user_from_db(email: str, db: Session) -> app.models.user.User:
     """
     Поиск пользователя по email в базе данных.
 
@@ -166,7 +166,7 @@ def get_user_from_db(email: str, db: Session) -> User:
         User: Объект пользователя, если он найден в базе данных, иначе None.
     """
 
-    statement = select(User).where(User.email == email)
+    statement = select(app.models.user.User).where(app.models.user.User.email == email)
     user = db.exec(statement).first()
 
     if user is None:
