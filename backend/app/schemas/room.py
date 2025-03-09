@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import List, Optional
 from app.models.room import GameStatus
@@ -9,7 +9,7 @@ class RoomBase(BaseModel):
     name: str
     max_players: int = 8
     rounds_total: int = 10
-    time_per_round = 60
+    time_per_round: int = 60
 
 
 class RoomCreate(RoomBase):
@@ -30,5 +30,6 @@ class RoomResponse(RoomBase):
     is_full: bool  # Добавлено
     players: List[PlayerResponse]  # Добавлено
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(
+        from_attributes=True
+    )

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from app.models.player import PlayerRole
 from typing import Optional
@@ -22,5 +22,6 @@ class PlayerResponse(PlayerBase):
     wrong_answers: int  # Добавлено
     success_rate: float
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(
+        from_attributes=True
+    )
