@@ -12,10 +12,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-
 # Хранение недействительных токенов
 blacklisted_tokens = set()
-
 
 class Token(BaseModel):
     """Схема токена"""
@@ -23,13 +21,11 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-
 class TokenData(BaseModel):
     """Данные токена"""
 
     email: str | None = None
     exp: datetime | None = None
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -43,7 +39,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     return pwd_context.verify(plain_password, hashed_password)
 
-
 def get_password_hash(password: str) -> str:
     """
     Хеширование пароля
@@ -53,7 +48,6 @@ def get_password_hash(password: str) -> str:
         str: Хеш пароля
     """
     return pwd_context.hash(password)
-
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
@@ -67,7 +61,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
     to_encode = data.copy()
 
-    # Установка времени истеченияя токена
     if expires_delta:
         expire = datetime.now() + expires_delta
     else:
@@ -75,9 +68,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
-
     return encoded_jwt
-
 
 def decode_access_token(token: str) -> dict:
     """
@@ -102,11 +93,9 @@ def decode_access_token(token: str) -> dict:
     except jwt.InvalidTokenError:
         return None
 
-
 def invalidate_token(token: str) -> None:
     """Добавление токена в черный список"""
     blacklisted_tokens.add(token)
-
 
 def is_token_valid(token: str) -> bool:
     """Проверка валидности токена"""

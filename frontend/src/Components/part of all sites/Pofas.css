@@ -1,0 +1,30 @@
+.navbar {
+    background-color: black;
+    color: white;
+}
+
+.navbar-brand,
+.nav-link {
+    color: white !important;
+}
+
+.nav-link:hover {
+    color: #ffe600 !important;
+}
+
+.dropdown-item {
+    color: #000;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-outline-success {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.btn-outline-success:hover {
+    background-color: rgba(255, 0, 0, 0.2);
+}

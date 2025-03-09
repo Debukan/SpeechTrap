@@ -1,7 +1,11 @@
 technical_specification.md
-.env
+backend/.env
 *.env
 .idea
+.pytest_cache
+certs
+nginx
+node_modules
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -133,7 +137,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+backend/.env
 .venv
 env/
 venv/
