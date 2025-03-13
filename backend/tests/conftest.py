@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db.base import Base
 from app.core.config import settings
 from app.main import app
-from app.db.session import get_db
+from app.db.deps import get_db
 import asyncio
 import os
 

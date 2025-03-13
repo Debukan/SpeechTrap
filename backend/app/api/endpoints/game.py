@@ -3,7 +3,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, ORJSONResponse
 from sqlalchemy.orm import Session
-from app.db.session import get_db  # Исправленный импорт
+from app.db.deps import get_db  # Исправленный импорт
 from app.models.word import WordWithAssociations  # Импорт модели
 
 app = FastAPI()

@@ -3,7 +3,7 @@ from sqlmodel import Session
 from datetime import datetime
 from typing import Optional
 
-from app.db.session import get_db
+from app.db.deps import get_db
 from app.models.room import Room, GameStatus
 from app.schemas.room import RoomCreate, RoomResponse
 

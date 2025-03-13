@@ -1,7 +1,7 @@
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
-from app.db.session import get_db
+from app.db.deps import get_db
 from app.models.room import Room
 from app.models.user import User
 
