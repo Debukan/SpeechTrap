@@ -1,22 +1,24 @@
 import React from 'react';
 import './Profile.css';
-import Register from './Register';
 
+interface ProfileProps {
+    userData: { name: string; email: string; password: string } | null;
+}
 
-const Profile = () => {
-    const information = (userData: { name: string; email: string; password: string }) => {
-        const User: { name: string; email: string; password: string } = userData;
-        return(
-            <div className="menu-container">
-                {User.name}
-                {User.email}
-                {User.password}
-            </div>
-        )
-    };
-
+const Profile: React.FC<ProfileProps> = ({ userData }) => {
     return (
-        <Register onRegister={information}></Register>
+        <div className="profile-container">
+            <h2>Профиль</h2>
+            {userData ? (
+                <div className="user-info">
+                    <p><strong>Имя:</strong> {userData.name}</p>
+                    <p><strong>Email:</strong> {userData.email}</p>
+                    <p><strong>Пароль:</strong> {userData.password}</p>
+                </div>
+            ) : (
+                <p>Пользователь не авторизован.</p>
+            )}
+        </div>
     );
 };
 
