@@ -1,5 +1,5 @@
 import React from 'react';
-import './Menu.css';
+import './Pofas.css';
 
 interface PofasProps {
     isOpen: boolean;

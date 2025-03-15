@@ -1,4 +1,4 @@
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 import jwt
@@ -8,11 +8,7 @@ from sqlmodel import select
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
-import app.models.user
-from app.db.session import get_db
-
-# Настройки шифрования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.db.deps import get_db
 
 # Настройки JWT
 ALGORITHM = settings.ALGORITHM
@@ -49,7 +45,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: True если пароль верный
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'),
+        hashed_password.encode('utf-8')
+    )
 
 
 def get_password_hash(password: str) -> str:
@@ -60,7 +59,11 @@ def get_password_hash(password: str) -> str:
     Returns:
         str: Хеш пароля
     """
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(
+        password.encode('utf-8'),
+        salt
+    ).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -119,7 +122,7 @@ def is_token_valid(token: str) -> bool:
     return token not in blacklisted_tokens
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> app.models.user.User:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
     Получает текущего пользователя по JWT токену.
 
@@ -154,7 +157,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-def get_user_from_db(email: str, db: Session) -> app.models.user.User:
+def get_user_from_db(email: str, db: Session):
     """
     Поиск пользователя по email в базе данных.
 
@@ -165,8 +168,9 @@ def get_user_from_db(email: str, db: Session) -> app.models.user.User:
     Returns:
         User: Объект пользователя, если он найден в базе данных, иначе None.
     """
+    from app.models.user import User
 
-    statement = select(app.models.user.User).where(app.models.user.User.email == email)
+    statement = select(User).where(User.email == email)
     user = db.exec(statement).first()
 
     if user is None:

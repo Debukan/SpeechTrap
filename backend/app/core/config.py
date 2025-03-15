@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from pathlib import Path
 
@@ -44,8 +44,10 @@ class Settings(BaseSettings):
         """
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}_test"
 
-    class Config:
-        env_file = str(Path(__file__).resolve().parents[2] / ".env")
+    model_config = SettingsConfigDict(
+        env_file=str(Path(__file__).resolve().parents[2] / ".env"),
+        env_file_encoding="utf-8"
+    )
 
 
 @lru_cache()

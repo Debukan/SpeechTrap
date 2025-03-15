@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 from app.models.base import Base
+from app.models.player import Player
 
 
 class GameStatus(str, Enum):
@@ -54,3 +55,36 @@ class Room(SQLModel, table=True):
             and hasattr(self, "players")
             and len(self.players) >= 2
         )
+
+    def add_player(self, user: "User"):
+        """
+        Добавляет пользователя в комнату как игрока.
+        Исключения:
+        - ValueError: Если комната переполнена.
+        """
+        if self.is_full():
+            raise ValueError("Комната переполнена")
+
+        # Создаем нового игрока
+        new_player = Player(user_id=user.id, room_id=self.id, role="waiting")
+        self.players.append(new_player)
+
+    def remove_player(self, player: "Player"):
+        """
+        Удаляет игрока из комнаты.
+        """
+        if player in self.players:
+            self.players.remove(player)
+
+    def get_player_count(self) -> int:
+        """
+        Возвращает количество игроков в комнате.
+        """
+        return len(self.players)
+
+    def __repr__(self):
+        """
+        Возвращает строковое представление комнаты.
+
+        """
+        return f"Room(id={self.id}, code={self.code}, status={self.status}, players={len(self.players)})"
