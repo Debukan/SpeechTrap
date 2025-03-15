@@ -1,5 +1,5 @@
 import React from 'react';
-import './Menu.css';
+import './ChooseRoom.css';
 
 interface ChrProps {
     isOpen: boolean;

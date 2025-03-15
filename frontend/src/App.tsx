@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Menu from './Components/Menu/Menu';
-import Register from "./Components/Register/Register";
+import Register from "./Components/RegisterandProfile/Register";
 import CreateRoom from "./Components/CreateRoom/CreateRoom";
 import Room from "./Components/Room/Room";
 
