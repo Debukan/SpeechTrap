@@ -3,7 +3,7 @@ import './Profile.css';
 import Register from './Register';
 
 
-const Prof = () => {
+const Profile = () => {
     const information = (userData: { name: string; email: string; password: string }) => {
         const User: { name: string; email: string; password: string } = userData;
         return(
@@ -20,4 +20,4 @@ const Prof = () => {
     );
 };
 
-export default Prof;
+export default Profile;
