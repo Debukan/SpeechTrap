@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Menu from './Components/Menu/Menu';
 import Register from "./Components/RegisterandProfile/Register";
 import CreateRoom from "./Components/CreateRoom/CreateRoom";
+import ChooseRoom from "./Components/Chooseroom/ChooseRoom";
 import Room from "./Components/Room/Room";
 import Profile from "./Components/RegisterandProfile/Profile";
 import ProfileIcon from "./Components/RegisterandProfile/ProfileIcon";
@@ -26,6 +27,7 @@ function App() {
                     <Route path="/register" element={<Register onRegister={handleRegister} />} />
                     <Route path="/profile" element={<Profile userData={userData} />} />
                     <Route path="/createroom" element={<CreateRoom />} />
+                    <Route path="/rooms" element={<ChooseRoom isOpen={true}/>} />
                     <Route path="/room/:roomId" element={<Room />} />
                 </Routes>
             </div>

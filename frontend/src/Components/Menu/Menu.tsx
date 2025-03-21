@@ -14,6 +14,9 @@ const Menu: React.FC = () => {
                         <button onClick={() => navigate('/createroom')}>Создать комнату</button>
                     </li>
                     <li>
+                        <button onClick={() => navigate('/rooms')}>Присоединиться к комнате</button>
+                    </li>
+                    <li>
                         <button onClick={() => navigate('/register')}>Регистрация</button>
                     </li>
                 </ul>

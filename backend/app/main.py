@@ -9,9 +9,7 @@ from app.core.config import settings
 from contextlib import asynccontextmanager
 
 # Импортируем роутеры
-from app.api.endpoints import users, rooms, join_room  # Добавили join_room
-from app.routes.word import router as word_router
-
+from app.api.endpoints import users, rooms, join_room, words # Добавили join_room
 # Инициализация FastAPI приложения
 app = FastAPI()
 
@@ -24,10 +22,11 @@ app.add_middleware(
 )
 
 # Подключаем роутеры
-app.include_router(users.router, prefix="/users", tags=['users'])  # Роутер для пользователей
-app.include_router(rooms.router, prefix="/rooms", tags=['rooms'])  # Роутер для комнат
-app.include_router(join_room.router, prefix="/join", tags=['join'])  # Роутер для присоединения к комнате
-app.include_router(word_router)  # Роутер для работы со словами
+app.include_router(users.router, prefix="/api", tags=['users'])  # Роутер для пользователей
+app.include_router(rooms.router, prefix="/api", tags=['rooms'])  # Роутер для комнат
+app.include_router(join_room.router, prefix="/api", tags=['join'])  # Роутер для присоединения к комнате
+app.include_router(words.router, prefix="/api", tags=['words'])  # Роутер для работы со словами
+#префикс пусть будет апи чтобы они в одном месте все были, более изолировано все равно внутри роутов будут свои пути
 
 @app.get("/")
 async def root():
