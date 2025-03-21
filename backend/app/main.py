@@ -22,10 +22,10 @@ app.add_middleware(
 )
 
 # Подключаем роутеры
-app.include_router(users.router, prefix="/api", tags=['users'])  # Роутер для пользователей
-app.include_router(rooms.router, prefix="/api", tags=['rooms'])  # Роутер для комнат
-app.include_router(join_room.router, prefix="/api", tags=['join'])  # Роутер для присоединения к комнате
-app.include_router(words.router, prefix="/api", tags=['words'])  # Роутер для работы со словами
+app.include_router(users.router, prefix="/api/users", tags=['users'])  # Роутер для пользователей
+app.include_router(rooms.router, prefix="/api/rooms", tags=['rooms'])  # Роутер для комнат
+app.include_router(join_room.router, prefix="/api/join", tags=['join'])  # Роутер для присоединения к комнате
+app.include_router(words.router, prefix="/api/words", tags=['words'])  # Роутер для работы со словами
 #префикс пусть будет апи чтобы они в одном месте все были, более изолировано все равно внутри роутов будут свои пути
 
 @app.get("/")

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def test_register_user(client):
     response = client.post(
-        "/users/register",
+        "/api/users/register",
         json={
             "name": "Test User",
             "email": "test@example.com",
@@ -23,7 +23,7 @@ def test_register_user(client):
 def test_register_existing_user(client):
     # Первая регистрация
     client.post(
-        '/users/register',
+        '/api/users/register',
         json={
             "name": "Test User",
             "email": "test@example.com",
@@ -33,7 +33,7 @@ def test_register_existing_user(client):
 
     # Повторная регистрация
     response = client.post(
-        "/users/register",
+        "/api/users/register",
         json={
             "name": "Test User",
             "email": "test@example.com",
@@ -47,7 +47,7 @@ def test_logout(client):
     # Создаем тестовый токен
     token = create_access_token({"sub": "test@example.com"})
     response = client.post(
-        "/users/logout",
+        "/api/users/logout",
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
@@ -55,7 +55,7 @@ def test_logout(client):
 
 def test_login_wrong_credentials(client):
     response = client.post(
-        "/users/login",
+        "/api/users/login",
         json={
             "email": "wrong@example.com",
             "password": "wrongpassword"
