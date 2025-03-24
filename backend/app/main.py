@@ -1,45 +1,36 @@
 import json
-
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.db.session import get_db, engine
 from app.models.word import WordWithAssociations
+from app.db.deps import get_db
+from app.core.config import settings
+from contextlib import asynccontextmanager
 
 # Импортируем роутеры
-from app.api.endpoints import users, rooms, join_room  # Добавили join_room
-from app.routes.word import router as word_router
-
-# Функция для загрузки начальных данных (слов) в базу данных
-def load_data():
-    """
-    Загружает слова и ассоциации из файла words.json в базу данных.
-    """
-    with open("words.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-
-    with Session(engine) as session:
-        for category, words in data.items():
-            for word, associations in words.items():
-                word_entry = WordWithAssociations(
-                    category=category,
-                    word=word,
-                    associations=associations
-                )
-                session.add(word_entry)
-        session.commit()
-
-# Вызываем загрузку данных при старте приложения
-load_data()
-
+from app.api.endpoints import users, rooms, join_room, words # Добавили join_room
 # Инициализация FastAPI приложения
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    #allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Подключаем роутеры
-app.include_router(users.router, prefix="/users", tags=['users'])  # Роутер для пользователей
-app.include_router(rooms.router, prefix="/rooms", tags=['rooms'])  # Роутер для комнат
-app.include_router(join_room.router, prefix="/join", tags=['join'])  # Роутер для присоединения к комнате
-app.include_router(word_router)  # Роутер для работы со словами
+app.include_router(users.router, prefix="/api/users", tags=['users'])  # Роутер для пользователей
+app.include_router(rooms.router, prefix="/api/rooms", tags=['rooms'])  # Роутер для комнат
+app.include_router(join_room.router, prefix="/api/join", tags=['join'])  # Роутер для присоединения к комнате
+app.include_router(words.router, prefix="/api/words", tags=['words'])  # Роутер для работы со словами
+#префикс пусть будет апи чтобы они в одном месте все были, более изолировано все равно внутри роутов будут свои пути
+
+@app.get("/")
+async def root():
+    return {"message": "SpeechTrap API"}
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)) -> dict:
@@ -57,3 +48,13 @@ def health_check(db: Session = Depends(get_db)) -> dict:
         return {"status": "ok", "message": "Database connected successfully"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.get("/check-data", tags=["debug"])
+async def check_data():
+    db = next(get_db())
+    try:
+        count = db.query(WordWithAssociations).count()
+        return {"status": "успех", "количество_слов": count}
+    finally:
+        db.close()

@@ -14,7 +14,11 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --reload
+    command: >
+          sh -c "
+          python -m app.db.init_db &&
+          python -m app.db.init_data &&
+          uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
     volumes:
       - ./backend:/app
     ports:
@@ -44,6 +48,17 @@ services:
       - backend
     networks:
       - app-network
+
+  test-db:
+    image: postgres:13
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/tests/.env.test
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
   
   backend-test:
     build:
@@ -58,15 +73,31 @@ services:
     env_file:
       - ./backend/tests/.env.test
     restart: "no"
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo 'Ожидание тестовой базы данных...' &&
+        python -c '
+      import time, psycopg2, os
 
-  test-db:
-    image: postgres:13
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-    env_file:
-      - ./backend/tests/.env.test
-    ports:
-      - "5433:5432"
+      for i in range(30):
+          try:
+              conn = psycopg2.connect(
+                  dbname=os.getenv(\"POSTGRES_DB\"),
+                  user=os.getenv(\"POSTGRES_USER\"),
+                  password=os.getenv(\"POSTGRES_PASSWORD\"),
+                  host=os.getenv(\"POSTGRES_HOST\")
+              )
+              conn.close()
+              print(\"Тестовая база данных готова!\")
+              break
+          except psycopg2.OperationalError as e:
+              print(f\"Attempt {i+1}/30: {e}\")
+              time.sleep(1)
+              ' &&
+              pytest -v
+            "
 
 networks:
   app-network:

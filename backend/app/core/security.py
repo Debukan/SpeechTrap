@@ -1,12 +1,14 @@
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 import jwt
 from pydantic import BaseModel
+from fastapi import HTTPException, Depends, status
+from sqlmodel import select
+from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
-
-# Настройки шифрования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.db.deps import get_db
 
 # Настройки JWT
 ALGORITHM = settings.ALGORITHM
@@ -15,17 +17,23 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 # Хранение недействительных токенов
 blacklisted_tokens = set()
 
+# Определение способа получения токена
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
 class Token(BaseModel):
     """Схема токена"""
 
     access_token: str
     token_type: str = "bearer"
 
+
 class TokenData(BaseModel):
     """Данные токена"""
 
     email: str | None = None
     exp: datetime | None = None
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -37,7 +45,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: True если пароль верный
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'),
+        hashed_password.encode('utf-8')
+    )
+
 
 def get_password_hash(password: str) -> str:
     """
@@ -47,7 +59,12 @@ def get_password_hash(password: str) -> str:
     Returns:
         str: Хеш пароля
     """
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(
+        password.encode('utf-8'),
+        salt
+    ).decode('utf-8')
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
@@ -69,6 +86,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def decode_access_token(token: str) -> dict:
     """
@@ -93,10 +111,69 @@ def decode_access_token(token: str) -> dict:
     except jwt.InvalidTokenError:
         return None
 
+
 def invalidate_token(token: str) -> None:
     """Добавление токена в черный список"""
     blacklisted_tokens.add(token)
 
+
 def is_token_valid(token: str) -> bool:
     """Проверка валидности токена"""
     return token not in blacklisted_tokens
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Получает текущего пользователя по JWT токену.
+
+    Args:
+        token (str): JWT токен пользователя.
+        db (Session): Сессия базы данных.
+    Returns:
+        User: Объект пользователя, если токен действителен.
+    Raises:
+        HTTPException: 401 если токен недействителен или пользователь не найден.
+    """
+
+    # Проверка валидности токена
+    if not is_token_valid(token):
+        raise HTTPException(status_code=401, detail="Токен недействителен")
+
+    # Декодирование данных из токена
+    token_data = decode_access_token(token)
+    if not token_data or not token_data.email:
+        raise HTTPException(status_code=401, detail="Неверные учетные данные")
+
+    # Поиск пользователя в базе данных по email
+    user = get_user_from_db(token_data.email, db)
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не найден",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user
+
+
+def get_user_from_db(email: str, db: Session):
+    """
+    Поиск пользователя по email в базе данных.
+
+    Args:
+        email (str): Электронная почта пользователя.
+        db (Session): Сессия базы данных.
+
+    Returns:
+        User: Объект пользователя, если он найден в базе данных, иначе None.
+    """
+    from app.models.user import User
+
+    statement = select(User).where(User.email == email)
+    user = db.exec(statement).first()
+
+    if user is None:
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
+
+    return user

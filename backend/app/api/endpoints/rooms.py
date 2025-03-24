@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
+from typing import List
 from datetime import datetime
 from typing import Optional
 
-from app.db.session import get_db
+from app.db.deps import get_db
 from app.models.room import Room, GameStatus
 from app.schemas.room import RoomCreate, RoomResponse
+from app.schemas.player import PlayerResponse
 
 router = APIRouter()
+
 
 @router.post("/rooms/", response_model=RoomResponse)
 def create_room(room_data: RoomCreate, db: Session = Depends(get_db)):
@@ -42,3 +45,27 @@ def create_room(room_data: RoomCreate, db: Session = Depends(get_db)):
     db.refresh(new_room)
 
     return new_room
+
+
+@router.get("/rooms/active", response_model=List[RoomResponse])
+def get_active_rooms(db: Session = Depends(get_db)):
+    """
+    Получает список активных комнат
+
+    """
+    rooms = db.query(Room).filter(Room.status != GameStatus.FINISHED).all()
+
+    return [
+        RoomResponse(
+            id=room.id,
+            code=room.code,
+            status=room.status,
+            current_round=room.current_round,
+            created_at=room.created_at,
+            player_count=len(room.players) if hasattr(room, "players") else 0,
+            current_word_id=room.current_word_id,
+            is_full=room.is_full(),
+            players=[PlayerResponse(id=player.id, name=player.name) for player in room.players]
+        )
+        for room in rooms
+    ]
