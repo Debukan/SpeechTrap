@@ -1,5 +1,6 @@
 import json
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, WebSocket
+from fastapi.websockets import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -10,8 +11,11 @@ from contextlib import asynccontextmanager
 
 # Импортируем роутеры
 from app.api.endpoints import users, rooms, join_room, words # Добавили join_room
+from app.websocket_chat import WebSocketChatManager  # Добавляем импорт менеджера чата
 # Инициализация FastAPI приложения
 app = FastAPI()
+
+chat_manager = WebSocketChatManager()
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,6 +31,20 @@ app.include_router(rooms.router, prefix="/api/rooms", tags=['rooms'])  # Роу�
 app.include_router(join_room.router, prefix="/api/join", tags=['join'])  # Роутер для присоединения к комнате
 app.include_router(words.router, prefix="/api/words", tags=['words'])  # Роутер для работы со словами
 #префикс пусть будет апи чтобы они в одном месте все были, более изолировано все равно внутри роутов будут свои пути
+
+@app.websocket("/ws/{room_id}/{session_id}")
+async def websocket_chat(
+    websocket: WebSocket,
+    room_id: str,
+    session_id: str
+):
+    await chat_manager.connect(websocket, room_id, session_id)
+    try:
+        while True:
+            await chat_manager.receive_message(websocket, room_id)
+    except WebSocketDisconnect:
+        await chat_manager.disconnect(websocket, room_id)
+
 
 @app.get("/")
 async def root():
