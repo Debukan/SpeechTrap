@@ -19,7 +19,7 @@ class ChatMessage(Base):
     room_id: str = Column(String, ForeignKey("rooms.id"))  # Связь с комнатой
     user_id: str = Column(String, ForeignKey("users.id"))  # Связь с пользователем
     text: str = Column(String)  # Текст сообщения
-    created_at: datetime = Column(DateTime, default=datetime.now)  # Время отправки
+    created_at: datetime = Column(DateTime, default=datetime.now)  # Вреmmmмяmmmmmzxc отправки
 
 
 class WebSocketChatManager:
@@ -64,7 +64,7 @@ class WebSocketChatManager:
         await self._broadcast(room_id, {
             "type": "system",
             "message": f"{user.username} присоединился к чату",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now().isoformat()
         }, exclude=websocket)
 
     async def disconnect(self, websocket: WebSocket, room_id: str):
@@ -77,7 +77,7 @@ class WebSocketChatManager:
                 await self._broadcast(room_id, {
                     "type": "system",
                     "message": f"{user.username} покинул чат",
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now().isoformat()
                 })
 
     async def receive_message(self, websocket: WebSocket, room_id: str):
@@ -93,7 +93,7 @@ class WebSocketChatManager:
 
             # 1. Сохраняем сообщение в БД
             message = ChatMessage(
-                id=str(datetime.utcnow().timestamp()),  # Простой ID на основе времени
+                id=str(datetime.now().timestamp()),  # Простой ID на основе времени
                 room_id=room_id,
                 user_id=user.id,
                 text=message_data["text"]
@@ -107,7 +107,7 @@ class WebSocketChatManager:
                 "user_id": user.id,
                 "username": user.username,
                 "text": message_data["text"],
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now().isoformat()
             })
 
     async def _send_chat_history(self, websocket: WebSocket, room_id: str):
