@@ -9,6 +9,11 @@ const apiClient = axios.create({
   },
 });
 
+export interface User {
+  id: string;
+  username: string;
+}
+
 export const fetchUsers = async () => {
   try {
     const response = await apiClient.get("/api/users");

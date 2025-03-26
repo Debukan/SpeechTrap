@@ -1,4 +1,3 @@
-# websocket_chat.py
 import json
 from datetime import datetime
 from typing import Dict, Set, Optional
@@ -16,11 +15,11 @@ from app.models.user import User
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
-    id = Column(String, primary_key=True)  # UUID или timestamp
-    room_id = Column(String, ForeignKey("rooms.id"))  # Связь с комнатой
-    user_id = Column(String, ForeignKey("users.id"))  # Связь с пользователем
-    text = Column(String)  # Текст сообщения
-    created_at = Column(DateTime, default=datetime.utcnow)  # Время отправки
+    id: str = Column(String, primary_key=True)  # UUID или timestamp
+    room_id: str = Column(String, ForeignKey("rooms.id"))  # Связь с комнатой
+    user_id: str = Column(String, ForeignKey("users.id"))  # Связь с пользователем
+    text: str = Column(String)  # Текст сообщения
+    created_at: datetime = Column(DateTime, default=datetime.now)  # Время отправки
 
 
 class WebSocketChatManager:

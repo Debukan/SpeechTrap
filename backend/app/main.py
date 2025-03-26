@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 
 # Импортируем роутеры
 from app.api.endpoints import users, rooms, join_room, words # Добавили join_room
-from app.websocket_chat import WebSocketChatManager  # Добавляем импорт менеджера чата
+from app.api.endpoints.websocket_chat import WebSocketChatManager  # Добавляем импорт менеджера чата
 # Инициализация FastAPI приложения
 app = FastAPI()
 

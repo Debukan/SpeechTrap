@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { fetchUsers } from "../../api/apiClient";
+import { fetchUsers, User } from "../../api/apiClient";
 
 const UserList = () => {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const getUsers = async () => {
