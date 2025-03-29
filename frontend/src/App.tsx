@@ -7,7 +7,8 @@ import ChooseRoom from "./Components/Chooseroom/ChooseRoom";
 import Room from "./Components/Room/Room";
 import Profile from "./Components/RegisterandProfile/Profile";
 import ProfileIcon from "./Components/RegisterandProfile/ProfileIcon";
-
+import ROV from "./Components/RoomOwnerVision/RoomOwnerVision";
+import RPV from "./Components/Room player vision/Room player vision";
 function App() {
     const [userData, setUserData] = useState<{ name: string; email: string; password: string } | null>(null);
 
@@ -29,6 +30,8 @@ function App() {
                     <Route path="/createroom" element={<CreateRoom />} />
                     <Route path="/rooms" element={<ChooseRoom isOpen={true}/>} />
                     <Route path="/room/:roomId" element={<Room />} />
+                    <Route path="/rov/:roomId" element={<ROV />} />
+                    <Route path="/rpv/:roomId" element={<RPV />} />
                 </Routes>
             </div>
         </Router>
