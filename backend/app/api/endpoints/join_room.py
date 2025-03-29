@@ -7,7 +7,7 @@ from app.models.player import Player
 
 router = APIRouter()
 
-@router.post("/join-room/{room_code}/{user_id}")
+@router.post("/join/{room_code}/{user_id}")
 def join_room_by_code(room_code: str, user_id: int, db: Session = Depends(get_db)):
     """
     Присоединение пользователя к комнате по коду.

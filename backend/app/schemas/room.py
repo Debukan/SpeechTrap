@@ -23,6 +23,7 @@ class RoomResponse(RoomBase):
     code: str
     status: GameStatus
     current_round: int
+    max_players: int
     created_at: datetime
     player_count: int
     current_word_id: Optional[int] = None  # Добавлено
