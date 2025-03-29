@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Menu from './Components/Menu/Menu';
-import Register from "./Components/RegisterandProfile/Register";
-import CreateRoom from "./Components/CreateRoom/CreateRoom";
-import ChooseRoom from "./Components/Chooseroom/ChooseRoom";
-import Room from "./Components/Room/Room";
-import Profile from "./Components/RegisterandProfile/Profile";
-import ProfileIcon from "./Components/RegisterandProfile/ProfileIcon";
-import ROV from "./Components/RoomOwnerVision/RoomOwnerVision";
-import RPV from "./Components/Room player vision/Room player vision";
+import Register from './Components/RegisterandProfile/Register';
+import Login from './Components/RegisterandProfile/Login';
+import Profile from './Components/RegisterandProfile/Profile';
+import CreateRoom from './Components/CreateRoom/CreateRoom';
+import ChooseRoom from './Components/Chooseroom/ChooseRoom';
+import ProfileIcon from './Components/RegisterandProfile/ProfileIcon';
+import Room from './Components/Room/Room';
+import ROV from './Components/RoomOwnerVision/RoomOwnerVision';
+import RPV from './Components/Room player vision/Room player vision';
+import { AuthProvider } from './context/AuthContext';
+
 function App() {
     const [userData, setUserData] = useState<{ name: string; email: string; password: string } | null>(null);
 
@@ -16,25 +19,34 @@ function App() {
         setUserData(userData);
     };
 
+    const handleLogin = (token: string, userData: any) => {
+        // Обработка успешного входа пользователя
+        setUserData(userData);
+    };
+
     return (
-        <Router>
-            <div className="App">
-                <h1>
-                    <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>SpeechTrap</Link>
-                </h1>
-                <ProfileIcon />
-                <Routes>
-                    <Route path="/" element={<Menu />} />
-                    <Route path="/register" element={<Register onRegister={handleRegister} />} />
-                    <Route path="/profile" element={<Profile userData={userData} />} />
-                    <Route path="/createroom" element={<CreateRoom />} />
-                    <Route path="/rooms" element={<ChooseRoom isOpen={true}/>} />
-                    <Route path="/room/:roomId" element={<Room />} />
-                    <Route path="/rov/:roomId" element={<ROV />} />
-                    <Route path="/rpv/:roomId" element={<RPV />} />
-                </Routes>
-            </div>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <div className="App">
+                    <h1>
+                        <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>SpeechTrap</Link>
+                    </h1>
+                    <ProfileIcon />
+                    <Routes>
+                        <Route path="/" element={<Menu />} />
+                        <Route path="/register" element={<Register onRegister={handleRegister} />} />
+                        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+                        <Route path="/profile" element={<Profile userData={userData} />} />
+                        <Route path="/createroom" element={<CreateRoom />} />
+                        <Route path="/rooms" element={<ChooseRoom isOpen={true}/>} />
+                        <Route path="/room/:roomId" element={<Room />} />
+                        <Route path="/rov/:roomId" element={<ROV />} />
+                        <Route path="/rpv/:roomId" element={<RPV />} />
+                        <Route path="*" element={<div className="not-found">404 - Страница не найдена</div>} />
+                    </Routes>
+                </div>
+            </Router>
+        </AuthProvider>
     );
 }
 

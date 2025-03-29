@@ -171,9 +171,11 @@ def get_user_from_db(email: str, db: Session):
     from app.models.user import User
 
     statement = select(User).where(User.email == email)
-    user = db.exec(statement).first()
-
-    if user is None:
-        raise HTTPException(status_code=401, detail="Пользователь не найден")
-
+    result = db.execute(statement).first()
+    
+    if result is None:
+        return None
+    
+    user = result[0]
+    
     return user

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Room player vision.css.css';
+import './Room player vision.css';
 
 const RPV: React.FC = () => {
     const navigate = useNavigate();

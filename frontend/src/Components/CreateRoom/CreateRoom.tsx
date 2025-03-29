@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import "./CreateRoom.css";
 
 const CreateRoom = () => {
-    const [roomName, setRoomName] = useState('');
+    const [roomName] = useState('');
     const [maxPlayers, setMaxPlayers] = useState(2);
     const [roundTime, setRoundTime] = useState(1);
     const [rounds, setRounds] = useState(3);
@@ -12,7 +12,6 @@ const CreateRoom = () => {
 
     const handleCreateRoom = () => {
         const roomData = {
-            roomName,
             maxPlayers,
             roundTime,
             rounds,
@@ -25,14 +24,6 @@ const CreateRoom = () => {
     return (
         <div className="create-room">
             <h1>Создание комнаты</h1>
-            <label>
-                Имя комнаты:
-                <input
-                    type="text"
-                    value={roomName}
-                    onChange={(e) => setRoomName(e.target.value)}
-                />
-            </label>
             <label>
                 Количество игроков: {maxPlayers}
                 <input

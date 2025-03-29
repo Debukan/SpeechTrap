@@ -6,14 +6,25 @@ from typing import Optional
 class UserBase(BaseModel):
     """Базовая схема пользователя"""
 
-    name: str = Field(..., min_length=2, max_length=50)
-    email: EmailStr
+    name: str
+    email: str
 
 
 class UserCreate(UserBase):
     """Схема для создания пользователя"""
 
-    password: str = Field(..., min_length=8)
+    password: str
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "name": "Иван Иванов",
+                "email": "ivan@example.com",
+                "password": "секретный_пароль"
+            }
+        }
+    )
 
 
 class UserResponse(UserBase):
@@ -31,8 +42,8 @@ class UserResponse(UserBase):
 class UserLogin(BaseModel):
     """Схема для авторизации пользователя."""
 
-    email: EmailStr
-    password: str = Field(..., min_length=8)
+    email: str
+    password: str
 
 
 class UserUpdate(BaseModel):

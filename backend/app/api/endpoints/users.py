@@ -111,7 +111,13 @@ def get_profile(current_user: User = Depends(get_current_user)):
     """
     Получение профиля текущего пользователя.
     """
-
+    # Проверяем, что current_user действительно объект User
+    if not isinstance(current_user, User):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Неверный тип данных пользователя"
+        )
+    
     return current_user
 
 

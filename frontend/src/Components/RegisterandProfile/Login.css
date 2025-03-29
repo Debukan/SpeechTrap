@@ -1,4 +1,4 @@
-.register-container {
+.login-container {
     max-width: 400px;
     margin: 0 auto;
     padding: 20px;
@@ -39,6 +39,7 @@ button {
     background-color: #007bff;
     color: white;
     cursor: pointer;
+    margin-top: 5px;
 }
 
 button:hover {
@@ -59,12 +60,12 @@ button:disabled {
     border-radius: 4px;
 }
 
-.login-link {
+.register-link {
     margin-top: 15px;
     text-align: center;
 }
 
-.login-link button {
+.register-link button {
     background: none;
     border: none;
     color: #007bff;
@@ -74,7 +75,7 @@ button:disabled {
     width: auto;
 }
 
-.login-link button:hover {
+.register-link button:hover {
     text-decoration: underline;
     background: none;
     color: #0056b3;

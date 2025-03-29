@@ -1,7 +1,5 @@
 .profile-icon {
-    position: fixed;
-    top: 20px;
-    right: 20px;
+    position: relative;
     width: 40px;
     height: 40px;
     background-color: #007bff;
@@ -17,4 +15,37 @@
 
 .profile-icon:hover {
     background-color: #0056b3;
+}
+
+.profile-icon-container {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-name {
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+.logout-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: #dc3545;
+    color: white;
+}
+
+.logout-button:hover {
+    background-color: #c82333;
 }

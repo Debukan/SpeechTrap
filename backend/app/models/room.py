@@ -24,7 +24,6 @@ class Room(SQLModel, table=True):
     __tablename__ = "rooms"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
     code: str = Field(unique=True, index=True)
     status: GameStatus = Field(default=GameStatus.WAITING)
     max_players: int = Field(default=8)
