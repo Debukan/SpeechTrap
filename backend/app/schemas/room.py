@@ -6,7 +6,6 @@ from app.schemas.player import PlayerResponse
 
 
 class RoomBase(BaseModel):
-    name: str
     max_players: int = 8
     rounds_total: int = 10
     time_per_round: int = 60
@@ -24,6 +23,7 @@ class RoomResponse(RoomBase):
     code: str
     status: GameStatus
     current_round: int
+    max_players: int
     created_at: datetime
     player_count: int
     current_word_id: Optional[int] = None  # Добавлено
