@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 from datetime import datetime
 from typing import List, Optional
 from app.models.room import GameStatus
@@ -26,10 +26,16 @@ class RoomResponse(RoomBase):
     max_players: int
     created_at: datetime
     player_count: int
-    current_word_id: Optional[int] = None  # Добавлено
-    is_full: bool  # Добавлено
-    players: List[PlayerResponse]  # Добавлено
+    current_word_id: Optional[int] = None
+    is_full: bool
+    players: List[PlayerResponse]
+    
+    # Cериализатор для datetime
+    @field_serializer('created_at')
+    def serialize_dt(self, dt: datetime):
+        return dt.isoformat()
 
     model_config = ConfigDict(
-        from_attributes=True
+        from_attributes=True,
+        json_encoders={datetime: lambda dt: dt.isoformat()}
     )

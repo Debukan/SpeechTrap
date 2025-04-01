@@ -146,9 +146,6 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             <div className="login-link">
                 <p>Уже есть аккаунт? <button onClick={goToLogin}>Войти</button></p>
             </div>
-            <div className="debug-info" style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
-                <p>Статус регистрации: {isLoading ? 'Отправка запроса...' : error ? 'Ошибка' : 'Готов к регистрации'}</p>
-            </div>
         </div>
     );
 };

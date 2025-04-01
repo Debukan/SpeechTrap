@@ -1,6 +1,6 @@
 import json
 import logging
-from fastapi import FastAPI, Depends, WebSocket, Request
+from fastapi import FastAPI, Depends, WebSocket, Request, status
 from fastapi.websockets import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,13 +11,17 @@ from app.db.deps import get_db
 from app.core.config import settings
 from contextlib import asynccontextmanager
 from datetime import datetime
+from app.schemas.room import RoomResponse
+from app.schemas.player import PlayerResponse
+from app.models.room import Room
+import jwt
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
 # Импортируем роутеры
-from app.api.endpoints import users, rooms, join_room, words
+from app.api.endpoints import users, rooms, words, ws
 from app.api.endpoints.websocket_chat import WebSocketChatManager
 from app.api.debug import router as debug_router
 
@@ -41,6 +45,16 @@ async def log_requests(request: Request, call_next):
     
     return response
 
+# Обработчик для ошибок JWT/авторизации
+@app.exception_handler(jwt.PyJWTError)
+async def jwt_exception_handler(request: Request, exc: jwt.PyJWTError):
+    logger.error(f"JWT error: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "Ошибка авторизации: неверный или устаревший токен"},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
 # Обработка исключений
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -50,7 +64,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": f"Internal server error: {str(exc)}"}
     )
 
-# Точный список разрешенных источников
 ALLOWED_ORIGINS = ["http://localhost:3000", "http://frontend:3000"]
 
 # Настройка CORS
@@ -67,23 +80,9 @@ app.add_middleware(
 # Подключаем роутеры
 app.include_router(users.router, prefix="/api/users", tags=['users'])  # Роутер для пользователей
 app.include_router(rooms.router, prefix="/api/rooms", tags=['rooms'])  # Роутер для комнат
-app.include_router(join_room.router, prefix="/api/join", tags=['join'])  # Роутер для присоединения к комнате
 app.include_router(words.router, prefix="/api/words", tags=['words'])  # Роутер для работы со словами
 app.include_router(debug_router, prefix="/api/debug", tags=['debug'])  # Роутер для отладки
-
-@app.websocket("/ws/{room_id}/{session_id}")
-async def websocket_chat(
-    websocket: WebSocket,
-    room_id: str,
-    session_id: str
-):
-    await chat_manager.connect(websocket, room_id, session_id)
-    try:
-        while True:
-            await chat_manager.receive_message(websocket, room_id)
-    except WebSocketDisconnect:
-        await chat_manager.disconnect(websocket, room_id)
-
+app.include_router(ws.router, prefix="/api", tags=['websocket'])
 
 @app.get("/")
 async def root():

@@ -80,3 +80,18 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+.error-message {
+    color: #d9534f;
+    background-color: #f2dede;
+    border: 1px solid #ebccd1;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}

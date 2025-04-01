@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (token: string, userData: User) => void;
+  login: (token: string, userData: User) => Promise<void>;
   logout: () => void;
 }
 
@@ -24,15 +24,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!token);
 
   useEffect(() => {
+    if (token) {
+      api.setAuthToken(token);
+    } else {
+      api.clearAuthToken();
+    }
+  }, [token]);
+
+  useEffect(() => {
     // Проверка токена при загрузке приложения
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (!storedToken) {
         setIsAuthenticated(false);
+        setUser(null);
         return;
       }
 
       try {
+        api.setAuthToken(storedToken);
+        
         // Запрос данных пользователя с использованием токена
         const result = await api.auth.getProfile(storedToken);
         
@@ -45,20 +56,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Ошибка аутентификации:', error);
-        logout();
+        localStorage.removeItem('token');
+        api.clearAuthToken();
+        setToken(null);
+        setUser(null);
+        setIsAuthenticated(false);
       }
     };
 
-    if (token) {
-      checkAuth();
-    }
+    checkAuth();
   }, []);
 
-  const login = (newToken: string, userData: User) => {
-    localStorage.setItem('token', newToken);
-    setToken(newToken);
-    setUser(userData);
-    setIsAuthenticated(true);
+  const login = async (newToken: string, userData: User): Promise<void> => {
+    try {
+      localStorage.setItem('token', newToken);
+      api.setAuthToken(newToken);
+      setToken(newToken);
+      setUser(userData);
+      setIsAuthenticated(true);
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Ошибка при входе:', error);
+      return Promise.reject(error);
+    }
   };
 
   const logout = () => {
@@ -69,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     localStorage.removeItem('token');
+    api.clearAuthToken();
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

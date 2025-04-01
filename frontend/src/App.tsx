@@ -5,7 +5,7 @@ import Register from './Components/RegisterandProfile/Register';
 import Login from './Components/RegisterandProfile/Login';
 import Profile from './Components/RegisterandProfile/Profile';
 import CreateRoom from './Components/CreateRoom/CreateRoom';
-import ChooseRoom from './Components/Chooseroom/ChooseRoom';
+import JoinRoom from './Components/JoinRoom/JoinRoom';
 import ProfileIcon from './Components/RegisterandProfile/ProfileIcon';
 import Room from './Components/Room/Room';
 import ROV from './Components/RoomOwnerVision/RoomOwnerVision';
@@ -38,7 +38,7 @@ function App() {
                         <Route path="/login" element={<Login onLogin={handleLogin} />} />
                         <Route path="/profile" element={<Profile userData={userData} />} />
                         <Route path="/createroom" element={<CreateRoom />} />
-                        <Route path="/rooms" element={<ChooseRoom isOpen={true}/>} />
+                        <Route path="/join-room" element={<JoinRoom />} />
                         <Route path="/room/:roomId" element={<Room />} />
                         <Route path="/rov/:roomId" element={<ROV />} />
                         <Route path="/rpv/:roomId" element={<RPV />} />

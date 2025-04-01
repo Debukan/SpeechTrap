@@ -17,3 +17,5 @@ pytest
 pytest-cov
 pytest-asyncio
 httpx
+websockets>=10.0
+uvicorn[standard]

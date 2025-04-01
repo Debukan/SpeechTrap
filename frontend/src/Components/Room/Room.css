@@ -13,6 +13,28 @@ h2 {
     margin-bottom: 20px;
 }
 
+.room-info {
+    background-color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+}
+
+.players-list {
+    background-color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+}
+
+.players-list h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
 button {
     padding: 10px;
     border: none;
@@ -22,11 +44,34 @@ button {
     cursor: pointer;
     transition: background-color 0.3s;
     margin: 10px 0;
-    width: auto;
+    width: 100%;
+    display: block;
 }
 
 button:hover {
     background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.secondary-button {
+    background-color: #6c757d;
+}
+
+.secondary-button:hover {
+    background-color: #5a6268;
+}
+
+.danger-button {
+    background-color: #dc3545;
+    margin-top: 10px;
+}
+
+.danger-button:hover {
+    background-color: #c82333;
 }
 
 ul {
@@ -35,5 +80,33 @@ ul {
 }
 
 li {
-    padding: 5px 0;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+li:last-child {
+    border-bottom: none;
+}
+
+.error-message {
+    color: #d9534f;
+    background-color: #f2dede;
+    border: 1px solid #ebccd1;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.current-player {
+    background-color: #e9f5ff;
+}
+
+.player-score {
+    margin-left: auto;
+    font-weight: bold;
+    color: #28a745;
 }

@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getApiBaseUrl } from '../../utils/config';
 import { api } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import './Login.css';
+
+interface LocationState {
+  from?: string;
+}
 
 interface LoginProps {
   onLogin: (token: string, userData: any) => void;
@@ -14,7 +19,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { from } = (location.state as LocationState) || { from: '/' };
   const apiBaseUrl = getApiBaseUrl();
+  const { login } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,8 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       const { access_token } = loginResult.data!;
-      localStorage.setItem('token', access_token);
-
+      
       // Получаем данные профиля
       const profileResult = await api.auth.getProfile(access_token);
       
@@ -38,13 +45,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         throw new Error(profileResult.error);
       }
 
-      onLogin(access_token, profileResult.data);
+      // Типизация данных пользователя
+      const userData = profileResult.data as {
+        id: number;
+        name: string;
+        email: string;
+      };
+
+      await login(access_token, userData);
       
-      // Перенаправляем на главную страницу
-      navigate('/');
+      onLogin(access_token, userData);
+      
+      // Небольшая задержка перед переходом, чтобы контекст успел обновиться
+      setTimeout(() => {
+        navigate(from || '/');
+      }, 100);
     } catch (error: any) {
       setError(error.message || 'Произошла ошибка при входе');
-    } finally {
       setIsLoading(false);
     }
   };

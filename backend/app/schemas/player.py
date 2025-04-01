@@ -4,22 +4,35 @@ from app.models.player import PlayerRole
 from typing import Optional
 
 class PlayerBase(BaseModel):
-    role: PlayerRole
-    score: int = 0
-
+    pass
 
 class PlayerCreate(PlayerBase):
     user_id: int
     room_id: int
+    role: PlayerRole = PlayerRole.WAITING
 
-
-class PlayerResponse(PlayerBase):
+class PlayerResponse(BaseModel):
     id: int
-    user_id: int  # Добавлено
-    room_id: int  # Добавлено
+    name: str
+    
+    user_id: Optional[int] = None
+    room_id: Optional[int] = None
+    role: Optional[str] = None
+    score: int = 0
+    joined_at: Optional[datetime] = None
+    correct_answers: int = 0
+    wrong_answers: int = 0
+    success_rate: float = 0.0
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )
+
+class PlayerDetailResponse(PlayerResponse):
+    user_id: int
+    room_id: int  
+    role: str
     joined_at: datetime
-    correct_answers: int
-    wrong_answers: int  # Добавлено
     success_rate: float
 
     model_config = ConfigDict(

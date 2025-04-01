@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from './config';
+import axios from 'axios';
 
 interface RequestOptions {
   method?: string;
@@ -92,10 +93,22 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   }
 }
 
+const setAuthToken = (token: string) => {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+};
+
+const clearAuthToken = () => {
+  delete axios.defaults.headers.common['Authorization'];
+};
+
 /**
  * API клиент с методами для работы с пользователями
  */
 export const api = {
+  setAuthToken,
+  clearAuthToken,
   auth: {
     login: (email: string, password: string) => 
       apiRequest<{ access_token: string, token_type: string }>('api/users/login', {
