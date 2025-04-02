@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../utils/axios-config';
 import { getApiBaseUrl } from '../../utils/config';
 import { useAuth } from '../../context/AuthContext';
+import { gameApi } from '../../api/apiClient';
 import './Room.css';
 
 interface Player {
@@ -41,14 +42,12 @@ const Room: React.FC = () => {
     const socketRef = useRef<WebSocket | null>(null);
     const wsBaseUrl = apiBaseUrl.replace('http', 'ws');
 
-    // Проверка авторизации при первой загрузке
     useEffect(() => {
         if (!isAuthenticated && roomId) {
             navigate('/login', { state: { from: `/room/${roomId}` } });
         }
     }, [isAuthenticated, roomId, navigate]);
 
-    // Проверка, присоединился ли текущий пользователь к комнате
     const isUserJoined = () => {
         if (justCreated && user) return true;
         if (!room || !user) return false;
@@ -62,12 +61,10 @@ const Room: React.FC = () => {
         setError(null);
 
         try {
-            // Получаем информацию о комнате по коду
             const response = await axios.get(`${apiBaseUrl}/api/rooms/${roomId}`);
             setRoom(response.data);
             
             if (justCreated && user && !response.data.players.some((p: Player) => p.name === user.name)) {
-                console.log('Room just created, marking user as joined');
                 const updatedRoom = { 
                     ...response.data,
                     players: response.data.players
@@ -75,7 +72,6 @@ const Room: React.FC = () => {
                 setRoom(updatedRoom);
             }
         } catch (err) {
-            console.error('Ошибка при получении данных комнаты:', err);
             if (axios.isAxiosError(err) && err.response) {
                 setError(err.response.data.detail || 'Не удалось загрузить данные комнаты');
             } else {
@@ -86,7 +82,6 @@ const Room: React.FC = () => {
         }
     };
 
-    // Инициализация WebSocket подключения
     useEffect(() => {
         if (!roomId) return;
 
@@ -94,26 +89,26 @@ const Room: React.FC = () => {
 
         const connectWebSocket = () => {
             if (!user) {
-                console.log('WebSocket не инициализирован: пользователь не авторизован');
                 return;
             }
 
             const wsUrl = `${wsBaseUrl}/api/ws/${roomId}/${user.id}`;
-            console.log('Connecting to WebSocket:', wsUrl);
-
             const ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
-                console.log('WebSocket подключение установлено');
+                console.log(`WebSocket connection opened to room ${roomId}`);
             };
 
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('WebSocket message received:', data);
 
                     if (data.type === 'room_update') {
+                        console.log('Room update received with players:', data.room.players);
                         setRoom(data.room);
                     } else if (data.type === 'player_joined') {
+                        console.log('Player joined:', data.player);
                         setRoom(prevRoom => {
                             if (!prevRoom) return prevRoom;
 
@@ -121,53 +116,89 @@ const Room: React.FC = () => {
 
                             if (playerExists) return prevRoom;
 
+                            const playerWithDefaults = {
+                                ...data.player,
+                                score: data.player.score ?? 0,
+                                role: data.player.role ?? 'waiting'
+                            };
+
                             return {
                                 ...prevRoom,
-                                players: [...prevRoom.players, data.player],
+                                players: [...prevRoom.players, playerWithDefaults],
                                 player_count: prevRoom.player_count + 1
                             };
                         });
                     } else if (data.type === 'player_left') {
-                        // Обновление списка игроков, если кто-то покинул комнату
+                        const playerId = data.player_id || 
+                                        (data.player && data.player.id) || 
+                                        data.user_id;
+                        
+                        if (!playerId) {
+                            console.error('No player ID in player_left message:', data);
+                            fetchRoomData();
+                            return;
+                        }
+
+                        console.log(`Player left: ID=${playerId}, Message: ${data.message || 'No message'}`);
+
                         setRoom(prevRoom => {
                             if (!prevRoom) return prevRoom;
 
-                            return {
-                                ...prevRoom,
-                                players: prevRoom.players.filter(p => p.id !== data.player_id),
-                                player_count: prevRoom.player_count - 1
-                            };
+                            const filteredPlayers = prevRoom.players.filter(p => p.id !== playerId);
+                            
+                            if (filteredPlayers.length !== prevRoom.players.length) {
+                                return {
+                                    ...prevRoom,
+                                    players: filteredPlayers,
+                                    player_count: prevRoom.player_count - 1
+                                };
+                            }
+                            return prevRoom;
                         });
                     } else if (data.type === 'game_started') {
-                        // Обновление статуса игры
+                        console.log('Получено сообщение о начале игры');
                         setRoom(prevRoom => prevRoom ? {...prevRoom, status: 'PLAYING'} : null);
+                        navigate(`/game/${roomId}`);
                     } else if (data.type === 'room_closed') {
                         alert('Комната была закрыта создателем');
                         navigate('/');
+                    } else if (data.type === 'player_score_updated') {
+                        console.log('Player score updated:', data);
+                        setRoom(prevRoom => {
+                            if (!prevRoom) return prevRoom;
+                            
+                            return {
+                                ...prevRoom,
+                                players: prevRoom.players.map(player => 
+                                    player.id === data.player_id 
+                                        ? {...player, score: data.score} 
+                                        : player
+                                )
+                            };
+                        });
                     }
                 } catch (error) {
-                    console.error('Ошибка при обработке сообщения WebSocket:', error);
+                    console.error('Error parsing WebSocket message:', error);
+                    fetchRoomData();
                 }
             };
 
             ws.onerror = (error) => {
-                console.error('Ошибка WebSocket:', error);
+                console.error('WebSocket error:', error);
+                fetchRoomData();
             };
 
             ws.onclose = (event) => {
-                console.log('WebSocket соединение закрыто:', event.code, event.reason);
+                console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
                 
-                // Проверяем, была ли комната закрыта специально или произошел разрыв соединения
                 if (event.code === 1000 || event.code === 1001) {
-                    console.log('Закрытие WebSocket');
                 } else if (event.code === 1008 || event.code === 403) {
-                    console.log('Комната не существует или доступ запрещен');
                     if (event.reason && event.reason.includes('not found')) {
                         alert('Комната была закрыта или не существует');
                         navigate('/');
                     }
                 } else {
-                    console.log('Неожиданное закрытие соединения, пытаемся переподключиться');
+                    console.log('Attempting to reconnect WebSocket...');
                     setTimeout(connectWebSocket, 3000);
                 }
             };
@@ -177,7 +208,6 @@ const Room: React.FC = () => {
 
         connectWebSocket();
 
-        // Закрытие соединения при размонтировании компонента
         return () => {
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                 socketRef.current.close();
@@ -185,7 +215,10 @@ const Room: React.FC = () => {
         };
     }, [roomId, user, wsBaseUrl, navigate]);
 
-    // Обработчик присоединения к комнате
+    const isRoomCreator = () => {
+        return !!room && room.players?.length > 0 && room.players[0].name === user?.name;
+    };
+
     const handleJoinRoom = async () => {
         if (!isAuthenticated) {
             navigate('/login', { state: { from: `/room/${roomId}` } });
@@ -198,17 +231,12 @@ const Room: React.FC = () => {
         setJoinError(null);
 
         try {
-            console.log(`Присоединение к комнате ${roomId} пользователя ${user.id}`);
-            
             const joinResponse = await axios.post(`${apiBaseUrl}/api/rooms/join/${roomId}/${user.id}`);
-            console.log('Ответ от сервера при присоединении:', joinResponse.data);
-            
             const response = await axios.get(`${apiBaseUrl}/api/rooms/${roomId}`);
             setRoom(response.data);
             
             alert(joinResponse.data.message || 'Вы успешно присоединились к комнате');
         } catch (err) {
-            console.error('Ошибка при присоединении к комнате:', err);
             if (axios.isAxiosError(err) && err.response) {
                 if (err.response.status === 401) {
                     navigate('/login', { state: { from: `/room/${roomId}` } });
@@ -223,7 +251,6 @@ const Room: React.FC = () => {
         }
     };
 
-    // Функция для закрытия лобби
     const handleCloseRoom = async () => {
         if (!roomId || !user) return;
 
@@ -234,7 +261,6 @@ const Room: React.FC = () => {
         setDeleting(true);
 
         try {
-            // Закрываем WebSocket соединение перед удалением комнаты
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                 socketRef.current.close(1000, 'Room closed by owner');
             }
@@ -242,7 +268,6 @@ const Room: React.FC = () => {
             await axios.delete(`${apiBaseUrl}/api/rooms/${roomId}`);
             navigate('/');
         } catch (err) {
-            console.error('Ошибка при закрытии комнаты:', err);
             if (axios.isAxiosError(err) && err.response) {
                 alert(err.response.data.detail || 'Не удалось закрыть комнату');
             } else {
@@ -252,8 +277,60 @@ const Room: React.FC = () => {
         }
     };
 
-    const handleStartGame = () => {
-        console.log('Игра началась!');
+    const handleStartGame = async () => {
+        if (!roomId || !room) {
+            return;
+        }
+        
+        if (room.player_count < 2) {
+            alert('Для начала игры необходимо минимум 2 игрока');
+            return;
+        }
+        
+        if (room.status !== 'waiting') {
+            alert('Игра уже была запущена');
+            return;
+        }
+        
+        try {
+            setDeleting(true);
+            
+            console.log(`Пытаемся начать игру в комнате ${roomId}`);
+            
+            const response = await axios.post(`${apiBaseUrl}/api/game/${roomId}/start`);
+            console.log('Ответ сервера при запуске игры:', response.data);
+            
+            setTimeout(() => {
+                navigate(`/game/${roomId}`);
+            }, 500);
+        } catch (err) {
+            console.error('Ошибка при запуске игры:', err);
+            if (axios.isAxiosError(err) && err.response) {
+                alert(err.response.data.detail || 'Не удалось запустить игру');
+            } else {
+                alert('Произошла ошибка при соединении с сервером');
+            }
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const handleLeaveRoom = async () => {
+        if (!roomId || !user || !isUserJoined()) return;
+
+        try {
+            await gameApi.leaveGame(roomId);
+            console.log('Успешно покинул комнату:', roomId);
+
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.close(1000, 'User left the room');
+            }
+            
+            navigate('/');
+        } catch (error) {
+            console.error('Ошибка при выходе из комнаты:', error);
+            navigate('/');
+        }
     };
 
     if (!isAuthenticated) {
@@ -286,7 +363,7 @@ const Room: React.FC = () => {
                 <p>Текущий раунд: {room.current_round} из {room.rounds_total}</p>
                 <p>Игроков: {room.player_count} из {room.max_players}</p>
                 <p>Время раунда: {Math.floor(room.time_per_round / 60)} мин.</p>
-                <p>Статус комнаты: {room.status === 'WAITING' ? 'Ожидание' : room.status}</p>
+                <p>Статус комнаты: {room.status === 'waiting' ? 'Ожидание' : room.status}</p>
             </div>
 
             <div className="players-list">
@@ -298,7 +375,7 @@ const Room: React.FC = () => {
                         {room.players.map((player) => (
                             <li key={player.id} className={player.name === user?.name ? 'current-player' : ''}>
                                 {player.name} {player.name === user?.name ? '(Вы)' : ''}
-                                {player.score !== undefined && <span className="player-score">{player.score} очков</span>}
+                                <span className="player-score">{typeof player.score === 'number' ? `${player.score} очков` : '0 очков'}</span>
                             </li>
                         ))}
                     </ul>
@@ -310,15 +387,40 @@ const Room: React.FC = () => {
             <div className="actions">
                 {isUserJoined() ? (
                     <>
-                        <button 
-                            onClick={handleStartGame}
-                            disabled={room.player_count < 2 || room.status !== 'WAITING'}
-                        >
-                            Начать игру
-                        </button>
+                        {isRoomCreator() && (
+                            <button 
+                                id="start-game-button"
+                                className="start-button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log('Кнопка нажата!');
+                                    handleStartGame();
+                                }}
+                                style={{
+                                    cursor: room && room.player_count >= 2 && room.status === 'waiting' ? 'pointer' : 'not-allowed',
+                                    backgroundColor: room && room.player_count >= 2 && room.status === 'waiting' ? '#ff9800' : '#cccccc',
+                                    position: 'relative',
+                                    zIndex: 10
+                                }}
+                                disabled={!(room && room.player_count >= 2 && room.status === 'waiting')}
+                            >
+                                {deleting ? 'Запуск игры...' : 'Начать игру'}
+                            </button>
+                        )}
 
-                        {/* Добавляем кнопку закрытия лобби, если пользователь - первый в списке игроков (создатель) */}
-                        {room.players.length > 0 && room.players[0].name === user?.name && (
+                        {!(room && room.player_count >= 2 && room.status === 'waiting') && (
+                            <p style={{ color: 'red', fontSize: '0.9em' }}>
+                                Для начала игры необходимо минимум 2 игрока и статус комнаты "Ожидание".
+                            </p>
+                        )}
+
+                        {!isRoomCreator() && room.status === 'waiting' && (
+                            <div className="waiting-message">
+                                Ожидание запуска игры создателем комнаты...
+                            </div>
+                        )}
+
+                        {room && room.players.length > 0 && room.players[0].name === user?.name && (
                             <button 
                                 onClick={handleCloseRoom}
                                 disabled={deleting}
@@ -331,14 +433,17 @@ const Room: React.FC = () => {
                 ) : (
                     <button 
                         onClick={handleJoinRoom} 
-                        disabled={joining || room.is_full}
+                        disabled={joining || (room ? room.is_full : false)}
                     >
                         {joining ? 'Присоединение...' : 'Присоединиться к комнате'}
                     </button>
                 )}
 
-                <button onClick={() => navigate('/')} className="secondary-button">
-                    Вернуться на главную
+                <button 
+                    onClick={isUserJoined() ? handleLeaveRoom : () => navigate('/')} 
+                    className="secondary-button"
+                >
+                    {isUserJoined() ? 'Выйти из комнаты' : 'Вернуться на главную'}
                 </button>
             </div>
         </div>

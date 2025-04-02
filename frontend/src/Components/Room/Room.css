@@ -35,6 +35,16 @@ h2 {
     padding-bottom: 5px;
 }
 
+@keyframes highlight {
+    0% { background-color: #ffffff; }
+    50% { background-color: #f0f8ff; }
+    100% { background-color: #ffffff; }
+}
+
+.players-list ul {
+    animation: highlight 1s ease-in-out;
+}
+
 button {
     padding: 10px;
     border: none;
@@ -53,8 +63,28 @@ button:hover {
 }
 
 button:disabled {
+    opacity: 0.7;
+}
+
+.start-game-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.start-game-btn:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+.start-game-btn:disabled {
     background-color: #cccccc;
+    color: #666666;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .secondary-button {
@@ -109,4 +139,53 @@ li:last-child {
     margin-left: auto;
     font-weight: bold;
     color: #28a745;
+    min-width: 80px;
+    text-align: right;
+}
+
+.start-button {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    border-radius: 5px;
+    margin: 15px 0;
+    width: 100%;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.start-button:hover {
+    background-color: #e68a00; 
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.start-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.start-button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed !important;
+}
+
+.waiting-message {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
 }

@@ -1,7 +1,7 @@
 import random
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import text
+from sqlalchemy.sql import text, func
 from app.db.deps import get_db
 from app.models.word import WordWithAssociations  # Импорт модели
 

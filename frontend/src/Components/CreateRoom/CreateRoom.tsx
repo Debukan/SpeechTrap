@@ -42,7 +42,7 @@ const CreateRoom = () => {
     useEffect(() => {
         if (!isAuthenticated) {
             // Если пользователь не авторизован, перенаправляем на страницу входа
-            navigate('/login', { state: { from: '/create-room' } });
+            navigate('/login', { state: { from: '/createroom' } });
             return;
         }
 
@@ -98,7 +98,7 @@ const CreateRoom = () => {
     const handleCreateRoom = async () => {
         // Дополнительная проверка авторизации перед отправкой запроса
         if (!isAuthenticated || !user) {
-            navigate('/login', { state: { from: '/create-room' } });
+            navigate('/login', { state: { from: '/createroom' } });
             return;
         }
 
@@ -125,7 +125,7 @@ const CreateRoom = () => {
             if (axios.isAxiosError(err) && err.response) {
                 if (err.response.status === 401) {
                     // Если получили ошибку авторизации, перенаправляем на страницу входа
-                    navigate('/login', { state: { from: '/create-room' } });
+                    navigate('/login', { state: { from: '/createroom' } });
                 } else {
                     setError(err.response.data.detail || 'Не удалось создать комнату');
                 }
