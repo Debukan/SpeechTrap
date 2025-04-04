@@ -3,18 +3,21 @@ from datetime import datetime
 from app.models.player import PlayerRole
 from typing import Optional
 
+
 class PlayerBase(BaseModel):
     pass
+
 
 class PlayerCreate(PlayerBase):
     user_id: int
     room_id: int
     role: PlayerRole = PlayerRole.WAITING
 
+
 class PlayerResponse(BaseModel):
     id: int
     name: str
-    
+
     user_id: Optional[int] = None
     room_id: Optional[int] = None
     role: Optional[str] = None
@@ -28,9 +31,10 @@ class PlayerResponse(BaseModel):
         from_attributes=True
     )
 
+
 class PlayerDetailResponse(PlayerResponse):
     user_id: int
-    room_id: int  
+    room_id: int
     role: str
     joined_at: datetime
     success_rate: float
@@ -38,3 +42,8 @@ class PlayerDetailResponse(PlayerResponse):
     model_config = ConfigDict(
         from_attributes=True
     )
+
+
+class PlayerAnswerRequest(BaseModel):
+    player_id: int
+    is_correct: bool
