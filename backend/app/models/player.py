@@ -3,6 +3,8 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 from app.models.base import Base
+from app.models.word import WordWithAssociations
+
 
 class PlayerRole(str, Enum):
     """Роли игрока в игре"""
@@ -49,3 +51,15 @@ class Player(SQLModel, table=True):
         if total == 0:
             return 0.0
         return (self.correct_answers / total) * 100
+
+    def check_answer(self, word: WordWithAssociations, guessed_association: str) -> bool:
+        """
+        Проверяет, является ли ответ игрока правильным.
+
+        :return: True, если ответ есть в списке, иначе False
+        """
+
+        guessed_association_low = guessed_association.lower()
+        word_associations_lower = [a.lower() for a in word.associations]
+
+        return guessed_association_low in word_associations_lower

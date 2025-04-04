@@ -32,8 +32,8 @@ def process_player_answer(player_id: int, word_id: int, guessed_association: str
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
 
-    # Проверка на правильность ответа
-    is_correct = guessed_association.lower() in [a.lower() for a in word.associations]
+    # Сравниваем слова
+    is_correct = player.check_answer(word, guessed_association)
 
     # Обновляем статистику игрока
     if is_correct:
