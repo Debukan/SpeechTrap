@@ -254,6 +254,7 @@ const Room: React.FC = () => {
 
     const handleStartGame = () => {
         console.log('Игра началась!');
+        navigate("/rp/:roomId");
     };
 
     if (!isAuthenticated) {

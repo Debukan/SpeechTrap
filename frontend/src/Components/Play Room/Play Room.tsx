@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './RoomOwnerVision.css';
+import './Play Room.css';
 
-const ROV: React.FC = () => {
+const PR: React.FC = () => {
     const navigate = useNavigate();
 
     return (
@@ -19,4 +19,4 @@ const ROV: React.FC = () => {
     );
 };
 
-export default ROV;
+export default PR;

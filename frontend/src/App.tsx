@@ -8,8 +8,8 @@ import CreateRoom from './Components/CreateRoom/CreateRoom';
 import JoinRoom from './Components/JoinRoom/JoinRoom';
 import ProfileIcon from './Components/RegisterandProfile/ProfileIcon';
 import Room from './Components/Room/Room';
-import ROV from './Components/RoomOwnerVision/RoomOwnerVision';
-import RPV from './Components/Room player vision/Room player vision';
+import PR from './Components/Play Room/Play Room';
+
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -40,8 +40,8 @@ function App() {
                         <Route path="/createroom" element={<CreateRoom />} />
                         <Route path="/join-room" element={<JoinRoom />} />
                         <Route path="/room/:roomId" element={<Room />} />
-                        <Route path="/rov/:roomId" element={<ROV />} />
-                        <Route path="/rpv/:roomId" element={<RPV />} />
+                        <Route path="/rp/:roomId" element={<PR />} />
+
                         <Route path="*" element={<div className="not-found">404 - Страница не найдена</div>} />
                     </Routes>
                 </div>
