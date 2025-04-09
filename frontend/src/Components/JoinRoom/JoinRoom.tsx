@@ -1,22 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../utils/axios-config';
 import { getApiBaseUrl } from '../../utils/config';
 import { useAuth } from '../../context/AuthContext';
 import './JoinRoom.css';
 
+interface Player {
+    id: number;
+    name: string;
+    role?: string;
+    score?: number;
+}
+
+interface Room {
+    id: number;
+    code: string;
+    status: string;
+    players: Player[];
+    player_count: number;
+    max_players: number;
+    current_round: number;
+    rounds_total: number;
+    time_per_round: number;
+    is_full: boolean;
+}
+
 const JoinRoom: React.FC = () => {
     const [roomCode, setRoomCode] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [joining, setJoining] = useState<boolean>(false);
+    const [checkingStatus, setCheckingStatus] = useState(true);
     const navigate = useNavigate();
     const apiBaseUrl = getApiBaseUrl();
     const { user, isAuthenticated } = useAuth();
 
-    // Проверка авторизации
-    if (!isAuthenticated) {
-        navigate('/login', { state: { from: '/join-room' } });
-    }
+    // Проверка авторизации и активных комнат при загрузке компонента
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login', { state: { from: '/joinroom' } });
+            return;
+        }
+
+        // Проверка, находится ли пользователь уже в какой-либо активной комнате
+        const checkActiveRooms = async () => {
+            setCheckingStatus(true);
+            try {
+                const response = await axios.get(`${apiBaseUrl}/api/rooms/active`);
+                const activeRooms: Room[] = response.data;
+                
+                // Проверка, является ли пользователь участником какой-либо активной комнаты
+                const userRooms = activeRooms.filter((room: Room) => 
+                    room.players.some((player: Player) => player.name === user?.name)
+                );
+                
+                if (userRooms.length > 0) {
+                    // Если пользователь уже в комнате, перенаправляем в неё
+                    const existingRoom = userRooms[0];
+                    setError(`Вы уже находитесь в комнате ${existingRoom.code}`);
+                    setTimeout(() => {
+                        navigate(`/room/${existingRoom.code}`);
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('Ошибка при проверке активных комнат:', err);
+            } finally {
+                setCheckingStatus(false);
+            }
+        };
+
+        checkActiveRooms();
+    }, [isAuthenticated, navigate, apiBaseUrl, user]);
 
     // Обработчик присоединения к комнате по коду
     const handleJoinRoom = async (e: React.FormEvent) => {
@@ -70,6 +123,20 @@ const JoinRoom: React.FC = () => {
     const handleCreateRoom = () => {
         navigate('/createroom');
     };
+
+    // Если пользователь не авторизован, не рендерим контент
+    if (!isAuthenticated) {
+        return null;
+    }
+
+    if (checkingStatus) {
+        return (
+            <div className="join-room">
+                <h1>Проверка статуса...</h1>
+                <p>Пожалуйста, подождите</p>
+            </div>
+        );
+    }
 
     return (
         <div className="join-room-container">

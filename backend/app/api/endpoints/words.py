@@ -1,20 +1,11 @@
 import random
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import text
+from sqlalchemy.sql import text, func
 from app.db.deps import get_db
-from app.models.word import WordWithAssociations  # Импорт модели
+from app.models.word import WordWithAssociations
 
 router = APIRouter()
-
-# Проверка подключения к базе данных
-@router.get("/health")
-def health_check(db: Session = Depends(get_db)) -> dict:
-    try:
-        db.execute(text("SELECT 1"))
-        return {"status": "ok", "message": "Database connected successfully"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 # Получение случайного слова по категории
 @router.get("/word/{category}")
@@ -37,7 +28,7 @@ def get_random_word(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Слов нет в базе")
 
     word = random.choice(words)
-    return {"category": word.category, "word": word.word, "associations": word.associations}
+    return {"id": word.id, "category": word.category, "word": word.word, "associations": word.associations}
 
 # Обновление статистики слова
 @router.post("/word/{word_id}/update-stats")
@@ -58,3 +49,57 @@ def add_word(word: str, category: str, associations: list[str], db: Session = De
     db.commit()
     db.refresh(new_word)
     return {"message": "Слово добавлено", "id": new_word.id}
+
+# Получение случайного слова, исключая слово с указанным ID
+@router.get("/next-word/{exclude_id}")
+def get_next_word(exclude_id: int, db: Session = Depends(get_db)):
+    """
+    Получение случайного слова, исключая слово с указанным ID
+    
+    Параметры:
+    - exclude_id: ID слова, которое следует исключить из выбора
+    
+    Возвращает:
+    - Случайное слово и его ассоциации
+    """
+    words = db.query(WordWithAssociations).filter(
+        WordWithAssociations.id != exclude_id,
+        WordWithAssociations.is_active == True
+    ).all()
+    
+    if not words:
+        raise HTTPException(status_code=404, detail="Нет активных слов для выбора")
+    
+    word = random.choice(words)
+    return {
+        "id": word.id,
+        "category": word.category,
+        "word": word.word,
+        "associations": word.associations
+    }
+
+# Получение слова по ID
+@router.get("/word-by-id/{word_id}")
+def get_word_by_id(word_id: int, db: Session = Depends(get_db)):
+    """
+    Получение слова по его ID
+    
+    Параметры:
+    - word_id: ID слова
+    
+    Возвращает:
+    - Слово и его ассоциации
+    """
+    word = db.query(WordWithAssociations).filter(
+        WordWithAssociations.id == word_id
+    ).first()
+    
+    if not word:
+        raise HTTPException(status_code=404, detail="Слово не найдено")
+    
+    return {
+        "id": word.id,
+        "category": word.category,
+        "word": word.word,
+        "associations": word.associations
+    }

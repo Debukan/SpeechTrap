@@ -21,14 +21,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
 # Импортируем роутеры
-from app.api.endpoints import users, rooms, words, ws
-from app.api.endpoints.websocket_chat import WebSocketChatManager
+from app.api.endpoints import users, rooms, words, ws, game
 from app.api.debug import router as debug_router
 
 # Инициализация FastAPI приложения
 app = FastAPI()
-
-chat_manager = WebSocketChatManager()
 
 # Middleware для логирования запросов
 @app.middleware("http")
@@ -82,7 +79,8 @@ app.include_router(users.router, prefix="/api/users", tags=['users'])  # Роу�
 app.include_router(rooms.router, prefix="/api/rooms", tags=['rooms'])  # Роутер для комнат
 app.include_router(words.router, prefix="/api/words", tags=['words'])  # Роутер для работы со словами
 app.include_router(debug_router, prefix="/api/debug", tags=['debug'])  # Роутер для отладки
-app.include_router(ws.router, prefix="/api", tags=['websocket'])
+app.include_router(ws.router, prefix="/api", tags=['websocket']) # Роутер для WebSocket
+app.include_router(game.router, prefix='/api/game', tags=['game']) # Роутер для игры
 
 @app.get("/")
 async def root():
