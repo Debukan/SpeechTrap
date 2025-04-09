@@ -3,7 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../utils/axios-config';
 import { getApiBaseUrl } from '../../utils/config';
 import { useAuth } from '../../context/AuthContext';
-import { gameApi } from '../../api/apiClient';
+import ChatBox from '../Chat/ChatBox';
+import { ChatMessage } from '../../types/chat';
 import './Room.css';
 
 interface Player {
@@ -11,6 +12,7 @@ interface Player {
     name: string;
     role?: string;
     score?: number;
+    score_total?: number;
 }
 
 interface RoomData {
@@ -41,6 +43,8 @@ const Room: React.FC = () => {
     const navigate = useNavigate();
     const socketRef = useRef<WebSocket | null>(null);
     const wsBaseUrl = apiBaseUrl.replace('http', 'ws');
+    const processedMessages = useRef<Set<string>>(new Set());
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
     useEffect(() => {
         if (!isAuthenticated && roomId) {
@@ -63,6 +67,13 @@ const Room: React.FC = () => {
         try {
             const response = await axios.get(`${apiBaseUrl}/api/rooms/${roomId}`);
             setRoom(response.data);
+            
+            // Перенаправляем в игру, если она уже запущена
+            if (response.data.status === 'playing') {
+                console.log('Игра уже запущена, перенаправляем в игру');
+                navigate(`/game/${roomId}`);
+                return;
+            }
             
             if (justCreated && user && !response.data.players.some((p: Player) => p.name === user.name)) {
                 const updatedRoom = { 
@@ -97,16 +108,52 @@ const Room: React.FC = () => {
 
             ws.onopen = () => {
                 console.log(`WebSocket connection opened to room ${roomId}`);
+                fetchRoomData();
             };
 
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log('WebSocket message received:', data);
 
-                    if (data.type === 'room_update') {
-                        console.log('Room update received with players:', data.room.players);
+                    if (data.id && processedMessages.current.has(data.id)) {
+                        console.log(`Message with ID=${data.id} already processed, skipping.`);
+                        return;
+                    }
+
+                    if (data.id) {
+                        processedMessages.current.add(data.id);
+                    }
+                    
+                    if (data.type === 'chat_message') {
+                        console.log('Получено сообщение чата:', data);
+                        setChatMessages(prev => [...prev, data]);
+                    } else if (data.type === 'room_update') {
+                        console.log('Room update received:', data.room);
                         setRoom(data.room);
+                    } else if (data.type === 'player_left') {
+                        console.log(`Player left: ID=${data.player_id}, Message: ${data.message}`);
+                        setRoom((prevRoom) => {
+                            if (!prevRoom) return prevRoom;
+
+                            // Проверяем, существует ли игрок в списке
+                            const playerExists = prevRoom.players.some(player => player.id === data.player_id);
+                            if (!playerExists) {
+                                console.log(`Player with ID=${data.player_id} not found, skipping update.`);
+                                return prevRoom;
+                            }
+
+                            // Удаляем игрока из списка
+                            const updatedPlayers = prevRoom.players.filter(player => player.id !== data.player_id);
+                            console.log('Updated players list after user_left/player_left:', updatedPlayers);
+
+                            return {
+                                ...prevRoom,
+                                players: updatedPlayers,
+                                player_count: Math.max(prevRoom.player_count - 1, 0),
+                            };
+                        });
+                    } else if (data.type === 'game_state_update') {
+                        console.log('Received game_state_update, checking game state');
                     } else if (data.type === 'player_joined') {
                         console.log('Player joined:', data.player);
                         setRoom(prevRoom => {
@@ -128,40 +175,33 @@ const Room: React.FC = () => {
                                 player_count: prevRoom.player_count + 1
                             };
                         });
-                    } else if (data.type === 'player_left') {
-                        const playerId = data.player_id || 
-                                        (data.player && data.player.id) || 
-                                        data.user_id;
-                        
-                        if (!playerId) {
-                            console.error('No player ID in player_left message:', data);
-                            fetchRoomData();
-                            return;
-                        }
-
-                        console.log(`Player left: ID=${playerId}, Message: ${data.message || 'No message'}`);
-
-                        setRoom(prevRoom => {
-                            if (!prevRoom) return prevRoom;
-
-                            const filteredPlayers = prevRoom.players.filter(p => p.id !== playerId);
-                            
-                            if (filteredPlayers.length !== prevRoom.players.length) {
-                                return {
-                                    ...prevRoom,
-                                    players: filteredPlayers,
-                                    player_count: prevRoom.player_count - 1
-                                };
-                            }
-                            return prevRoom;
-                        });
                     } else if (data.type === 'game_started') {
                         console.log('Получено сообщение о начале игры');
-                        setRoom(prevRoom => prevRoom ? {...prevRoom, status: 'PLAYING'} : null);
-                        navigate(`/game/${roomId}`);
+                        // Устанавливаем статус комнаты как "playing"
+                        console.log('Текущий пользователь перед переходом:', user);
+                        if (user) {
+                            console.log('Сохраняем данные пользователя в localStorage перед переходом');
+                            localStorage.setItem('user', JSON.stringify(user));
+                        }
+                        setRoom(prevRoom => prevRoom ? {...prevRoom, status: 'playing'} : null);
+                        if (socketRef.current) {
+                            socketRef.current.close(1000, 'Game started, leaving room');
+                        }                       
+                        // Перенаправляем пользователя в игру
+                        console.log(`Перенаправление на игру: /game/${roomId}`);
+                        setTimeout(() => {
+                            if (socketRef.current) {
+                                socketRef.current.close(1000, 'Game started, leaving room');
+                            }
+                            console.log(`Перенаправление на игру: /game/${roomId}`);
+                            navigate(`/game/${roomId}`);
+                        }, 100);
                     } else if (data.type === 'room_closed') {
+                        if (socketRef.current) {
+                            socketRef.current.close(1000, 'Room closed by owner');
+                        }
                         alert('Комната была закрыта создателем');
-                        navigate('/');
+                        navigate('/', { replace: true });
                     } else if (data.type === 'player_score_updated') {
                         console.log('Player score updated:', data);
                         setRoom(prevRoom => {
@@ -190,13 +230,22 @@ const Room: React.FC = () => {
 
             ws.onclose = (event) => {
                 console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
-                
+                const isPlaying = room?.status?.toLowerCase() === "playing";
+                console.log(`Текущий статус комнаты при закрытии соединения: ${room?.status}`);
                 if (event.code === 1000 || event.code === 1001) {
+                    console.log('Нормальное закрытие соединения');
+                    if (isPlaying) {
+                        console.log('Перенаправляем на страницу игры после нормального закрытия WebSocket');
+                        navigate(`/game/${roomId}`);
+                    }
                 } else if (event.code === 1008 || event.code === 403) {
                     if (event.reason && event.reason.includes('not found')) {
                         alert('Комната была закрыта или не существует');
                         navigate('/');
                     }
+                } else if (isPlaying) {
+                    console.log('Обнаружена активная игра, перенаправляем на страницу игры');
+                    navigate(`/game/${roomId}`);
                 } else {
                     console.log('Attempting to reconnect WebSocket...');
                     setTimeout(connectWebSocket, 3000);
@@ -211,9 +260,20 @@ const Room: React.FC = () => {
         return () => {
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                 socketRef.current.close();
+                console.log('WebSocket closed on room unmount');
             }
         };
-    }, [roomId, user, wsBaseUrl, navigate]);
+    }, [roomId, user, wsBaseUrl, navigate, isAuthenticated, apiBaseUrl]);
+
+    const handleSendChatMessage = async (message: string) => {
+        if (!roomId || !user) return;
+    
+        try {
+            await axios.post(`${apiBaseUrl}/api/rooms/${roomId}/chat`, { message });
+        } catch (error) {
+            console.error('Ошибка при отправке сообщения в чат:', error);
+        }
+    };
 
     const isRoomCreator = () => {
         return !!room && room.players?.length > 0 && room.players[0].name === user?.name;
@@ -319,17 +379,21 @@ const Room: React.FC = () => {
         if (!roomId || !user || !isUserJoined()) return;
 
         try {
-            await gameApi.leaveGame(roomId);
-            console.log('Успешно покинул комнату:', roomId);
-
+            // Сначала закрываем WebSocket соединение
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                socketRef.current.close(1000, 'User left the room');
+                socketRef.current.close(1000, 'User left the room voluntarily');
             }
             
-            navigate('/');
+            await axios.post(`${apiBaseUrl}/api/rooms/${roomId}/leave`);
+            console.log('Успешно покинул лобби:', roomId);
+            
+            // Перенаправляем после небольшой задержки
+            setTimeout(() => {
+                navigate('/', { replace: true });
+            }, 100);
         } catch (error) {
-            console.error('Ошибка при выходе из комнаты:', error);
-            navigate('/');
+            console.error('Ошибка при выходе из лобби:', error);
+            navigate('/', { replace: true });
         }
     };
 
@@ -360,7 +424,7 @@ const Room: React.FC = () => {
         <div className="menu-container">
             <h2>Комната: {room.code}</h2>
             <div className="room-info">
-                <p>Текущий раунд: {room.current_round} из {room.rounds_total}</p>
+                <p>Всего раундов: {room.rounds_total}</p>
                 <p>Игроков: {room.player_count} из {room.max_players}</p>
                 <p>Время раунда: {Math.floor(room.time_per_round / 60)} мин.</p>
                 <p>Статус комнаты: {room.status === 'waiting' ? 'Ожидание' : room.status}</p>
@@ -375,12 +439,25 @@ const Room: React.FC = () => {
                         {room.players.map((player) => (
                             <li key={player.id} className={player.name === user?.name ? 'current-player' : ''}>
                                 {player.name} {player.name === user?.name ? '(Вы)' : ''}
-                                <span className="player-score">{typeof player.score === 'number' ? `${player.score} очков` : '0 очков'}</span>
+                                <span className="player-score">
+                                    {typeof player.score_total === 'number' ? `${player.score_total} очков` : '0 очков'}
+                                </span>
                             </li>
                         ))}
                     </ul>
                 )}
             </div>
+
+            {isUserJoined() && (
+                <div className="room-chat">
+                    <ChatBox 
+                        roomCode={roomId || ''}
+                        isExplaining={false}
+                        messages={chatMessages}
+                        onSendMessage={handleSendChatMessage}
+                    />
+                </div>
+            )}
 
             {joinError && <div className="error-message">{joinError}</div>}
 

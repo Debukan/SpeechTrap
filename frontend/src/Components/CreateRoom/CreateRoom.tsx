@@ -188,7 +188,7 @@ const CreateRoom = () => {
                     type="range"
                     className="slider"
                     min="1"
-                    max="10"
+                    max="20"
                     value={rounds}
                     onChange={(e) => setRounds(parseInt(e.target.value))}
                 />

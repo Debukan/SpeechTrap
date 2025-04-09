@@ -17,8 +17,9 @@ class PlayerResponse(BaseModel):
     
     user_id: Optional[int] = None
     room_id: Optional[int] = None
-    role: Optional[str] = None
-    score: int = 0
+    role: Optional[PlayerRole] = None
+    score: Optional[int] = 0
+    score_total: Optional[int] = 0
     joined_at: Optional[datetime] = None
     correct_answers: int = 0
     wrong_answers: int = 0

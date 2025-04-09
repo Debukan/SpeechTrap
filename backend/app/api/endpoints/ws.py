@@ -57,16 +57,45 @@ class ConnectionManager:
     async def broadcast(self, room_code: str, message: dict, exclude_user_id: int = None, exclude_websocket: WebSocket = None):
         # Рассылка сообщений всем участникам комнаты, кроме указанного пользователя
         if room_code in self.active_connections:
+            clients_count = len(self.active_connections[room_code])
+            logger.info(f"Broadcasting message to {clients_count} clients in room {room_code}: {message.get('type', 'unknown')}")
+            
+            success_count = 0
             for client_id, websocket in self.active_connections[room_code].items():
                 if client_id != exclude_user_id and websocket != exclude_websocket:
                     try:
                         if isinstance(message, dict):
                             json_str = json.dumps(message, default=self.serialize_datetime)
                             await websocket.send_text(json_str)
+                            success_count += 1
                         else:
                             await websocket.send_text(message)
+                            success_count += 1
                     except Exception as e:
-                        logger.error(f"Error sending message: {e}")
+                        logger.error(f"Error sending message to client {client_id}: {e}")
+            
+            logger.info(f"Successfully sent message to {success_count} out of {clients_count} clients")
+
+    async def send_personal_message(self, user_id: str, message: dict):
+        """
+        Отправляет личное сообщение конкретному пользователю
+        
+        Параметры:
+        - user_id: ID пользователя, которому нужно отправить сообщение
+        - message: Сообщение для отправки
+        """
+        # Найти все соединения данного пользователя
+        user_id_int = int(user_id) if user_id.isdigit() else user_id
+        
+        for room_code in self.active_connections:
+            for connection_id, websocket in self.active_connections[room_code].items():
+                if connection_id == user_id_int:
+                    try:
+                        json_str = json.dumps(message, default=self.serialize_datetime)
+                        await websocket.send_text(json_str)
+                        logger.info(f"Personal message sent to user {user_id}")
+                    except Exception as e:
+                        logger.error(f"Error sending personal message to user {user_id}: {e}")
 
 # Инициализация менеджера подключений
 manager = ConnectionManager()
@@ -134,6 +163,10 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int,
         
         await websocket.send_text(json_data)
         
+        # Отправляем запрос на обновление состояния игры для этого игрока
+        from app.api.endpoints.game import send_game_state_update
+        await send_game_state_update(room_code, db)
+        
         # Ожидание сообщений от клиента
         while True:
             data = await websocket.receive_text()
@@ -160,10 +193,6 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int,
         logger.info(f"User {user_id} disconnected from room {room_code}")
         # Обработка отключения пользователя
         manager.disconnect(room_code, user_id)
-        await manager.broadcast(
-            room_code,
-            {"type": "user_left", "user_id": user_id}
-        )
     except Exception as e:
         logger.exception(f"Error in websocket_endpoint for room {room_code}, user_id {user_id}: {str(e)}")
         try:

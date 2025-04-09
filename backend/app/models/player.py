@@ -25,6 +25,7 @@ class Player(SQLModel, table=True):
 
     # Игровая статистика
     score: int = Field(default=0)
+    score_total: int = Field(default=0)
     role: PlayerRole = Field(default=PlayerRole.WAITING)
     correct_answers: int = Field(default=0)
     wrong_answers: int = Field(default=0)

@@ -189,3 +189,32 @@ li:last-child {
     color: #6c757d;
     font-style: italic;
 }
+
+.player-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.5s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.room-chat {
+    width: 100%;
+    margin: 20px 0;
+    max-height: 300px;
+}
+
+
+@media (min-width: 768px) {
+    .room-chat {
+        max-width: 800px;
+        margin: 20px auto;
+    }
+}

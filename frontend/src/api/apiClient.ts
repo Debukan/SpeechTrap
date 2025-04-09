@@ -39,6 +39,7 @@ export interface GameState {
   timeLeft?: number;
   currentPlayer?: string;
   rounds_total: number;
+  time_per_round?: number;
 }
 
 // API для получения списка пользователей
@@ -107,6 +108,11 @@ export const gameApi = {
       console.error("Error submitting guess:", error);
       throw error;
     }
+  },
+
+  sendChatMessage: async (roomCode: string, message: string) => {
+    const response = await apiClient.post(`/api/game/${roomCode}/chat`, { message });
+    return response.data;
   }
 };
 
