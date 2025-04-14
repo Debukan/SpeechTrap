@@ -1,16 +1,19 @@
 .join-room-container {
   max-width: 500px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f9f9f9;
+  margin: 2rem auto;
+  padding: 25px;
+  background: linear-gradient(135deg, #ffeb3b, #8bc34a);
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  font-family: 'Arial', sans-serif;
 }
 
 h2 {
   text-align: center;
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: 25px;
+  color: #222;
+  font-size: 2em;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 .form-group {
@@ -19,103 +22,117 @@ h2 {
 
 label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
 }
 
 input {
   width: 100%;
-  padding: 10px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 15px;
+  font-size: 1em;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.9);
   text-align: left;
   font-family: inherit;
+  transition: all 0.3s ease;
 }
 
 input[type="text"]#roomCode {
   text-transform: uppercase;
   text-align: center;
-  letter-spacing: 1px;
-  font-size: 16px;
+  letter-spacing: 2px;
+  font-size: 1.1em;
+  font-weight: bold;
 }
 
 input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+  border-color: #222;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  background-color: white;
 }
 
-.join-button, 
-.create-button, 
+.join-button,
+.create-button,
 .back-button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: bold;
+  border-radius: 6px;
+  font-size: 1.1em;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 10px;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+  color: white;
 }
 
 .join-button {
-  background-color: #007bff;
-  color: white;
+  background-color: #222;
 }
 
 .join-button:hover {
-  background-color: #0069d9;
+  background-color: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .create-button {
-  background-color: #28a745;
-  color: white;
+  background-color: #333;
 }
 
 .create-button:hover {
-  background-color: #218838;
+  background-color: #222;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .back-button {
-  background-color: #6c757d;
-  color: white;
+  background-color: #555;
 }
 
 .back-button:hover {
-  background-color: #5a6268;
+  background-color: #444;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 10px;
-  border-radius: 4px;
+  background-color: #ffebee;
+  color: #d32f2f;
+  padding: 12px;
+  border-radius: 5px;
   margin-bottom: 20px;
   text-align: center;
+  font-weight: 500;
+  border: 1px solid #ef9a9a;
 }
 
 .divider {
   text-align: center;
-  margin: 15px 0;
+  margin: 20px 0;
   position: relative;
+  color: #555;
+  font-weight: 500;
 }
 
-.divider::before, 
+.divider::before,
 .divider::after {
   content: "";
   position: absolute;
   top: 50%;
   width: 45%;
   height: 1px;
-  background-color: #ddd;
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .divider::before {
@@ -124,4 +141,13 @@ button:disabled {
 
 .divider::after {
   right: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.join-room-container {
+  animation: fadeIn 0.5s ease-out;
 }
