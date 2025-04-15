@@ -903,18 +903,22 @@ async def submit_guess(
         player.wrong_answers += 1
         db.commit()
         
+        # Сохраняем необходимые данные до передачи в background task
+        player_id = player.id
+        player_name = current_user.name
+        guess_text = guess
+
         # Отправляем всем сообщение о неправильной догадке
         async def broadcast_wrong_guess():
             await manager.broadcast(
                 room_code,
                 {
                     "type": "wrong_guess",
-                    "player_id": player.id,
-                    "guess": guess,
-                    "message": f"Игрок {current_user.name} пытается угадать: {guess}"
+                    "player_id": player_id,
+                    "guess": guess_text,
+                    "message": f"Игрок {player_name} пытается угадать: {guess_text}"
                 }
             )
-        
         background_tasks.add_task(broadcast_wrong_guess)
         
         return {"correct": False, "message": "Неправильно, попробуйте еще раз."}

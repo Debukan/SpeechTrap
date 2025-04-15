@@ -31,11 +31,10 @@ class RoomResponse(RoomBase):
     players: List[PlayerResponse]
     
     # Cериализатор для datetime
-    @field_serializer('created_at')
+    @field_serializer('created_at', when_used="json")
     def serialize_dt(self, dt: datetime):
         return dt.isoformat()
 
     model_config = ConfigDict(
         from_attributes=True,
-        json_encoders={datetime: lambda dt: dt.isoformat()}
     )
