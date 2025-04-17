@@ -6,6 +6,7 @@ backend/.env
 certs
 nginx
 node_modules
+script.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
