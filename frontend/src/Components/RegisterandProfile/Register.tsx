@@ -4,6 +4,7 @@ import { getApiBaseUrl } from '../../utils/config';
 import { api } from '../../utils/api';
 import { testCorsSettings } from '../../utils/debug';
 import './Register.css';
+import { useToast } from '@chakra-ui/react';
 
 interface RegisterProps {
     onRegister: (userData: { name: string; email: string; password: string }) => void;
@@ -17,6 +18,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const navigate = useNavigate();
     const apiBaseUrl = getApiBaseUrl();
+    const toast = useToast();
 
     // Базовая валидация полей формы
     const validateForm = (): boolean => {
@@ -89,8 +91,15 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             }
             
             onRegister({ name, email, password });
-            
-            alert('Регистрация успешна! Теперь вы можете войти в систему.');
+
+            toast({
+                title: 'Регистрация успешна!',
+                description: 'Теперь вы можете войти в систему.',
+                status: 'success',
+                duration: 4000,
+                isClosable: true,
+                position: 'top',
+            });
             navigate('/login');
         } catch (error: any) {
             console.error('Registration error:', error);

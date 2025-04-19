@@ -6,6 +6,7 @@ import { getApiBaseUrl } from "../../utils/config";
 import axios from '../../utils/axios-config';
 import ChatBox from '../Chat/ChatBox';
 import { ChatMessage } from '../../types/chat';
+import { useToast } from '@chakra-ui/react';
 import "./GameBoard.css";
 
 interface Player {
@@ -49,6 +50,7 @@ const GameBoard: React.FC = () => {
   const isComponentMounted = useRef(true);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const toast = useToast();
 
   // Устанавливаем isComponentMounted в false при размонтировании компонента
   useEffect(() => {
@@ -245,7 +247,13 @@ const GameBoard: React.FC = () => {
               setTimeLeft(data.time_per_round || timePerRound);
             }
           } else if (data.type === 'game_finished') {
-            alert("Игра завершена!");
+            toast({
+              title: "Игра завершена!",
+              status: "info",
+              duration: 4000,
+              isClosable: true,
+              position: 'top',
+            });
             navigate(`/room/${roomCode}`);
           } else if (data.type === 'game_started') {
             console.log('Получено сообщение о начале игры в игровом режиме');
@@ -256,7 +264,14 @@ const GameBoard: React.FC = () => {
               setTimeLeft(data.time_per_round);
             }
           } else if (data.type === 'correct_guess') {
-            alert(`${data.message}`);
+            toast({
+              title: "Правильно!",
+              description: data.message,
+              status: "success",
+              duration: 4000,
+              isClosable: true,
+              position: 'top',
+            });
             fetchGameState();
 
             // Обновляем таймер если получен новый
@@ -268,7 +283,13 @@ const GameBoard: React.FC = () => {
           } else if (data.type === 'wrong_guess') {
             console.log(`Игрок ${data.player_id} неправильно угадал: ${data.guess}`);
           } else if (data.type === 'game_finished') {
-            alert("Игра завершена!");
+            toast({
+              title: "Игра завершена!",
+              status: "info",
+              duration: 4000,
+              isClosable: true,
+              position: 'top',
+            });
             navigate(`/room/${roomCode}`);
           } else if (data.type === 'player_left') {
             console.log('Игрок вышел из игры:', data);
@@ -440,7 +461,14 @@ const GameBoard: React.FC = () => {
       setGuess("");
 
       if (result.correct) {
-        alert("Правильно! Вы угадали слово.");
+        toast({
+          title: "Правильно!",
+          description: "Вы угадали слово.",
+          status: "success",
+          duration: 4000,
+          isClosable: true,
+          position: 'top',
+        });
       }
     } catch (error) {
       console.error("Error submitting guess:", error);

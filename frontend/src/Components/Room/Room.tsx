@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import ChatBox from '../Chat/ChatBox';
 import { ChatMessage } from '../../types/chat';
 import './Room.css';
+import { useToast } from '@chakra-ui/react';
 
 interface Player {
     id: number;
@@ -45,6 +46,7 @@ const Room: React.FC = () => {
     const wsBaseUrl = apiBaseUrl.replace('http', 'ws');
     const processedMessages = useRef<Set<string>>(new Set());
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const toast = useToast();
 
     useEffect(() => {
         if (!isAuthenticated && roomId) {
@@ -200,7 +202,13 @@ const Room: React.FC = () => {
                         if (socketRef.current) {
                             socketRef.current.close(1000, 'Room closed by owner');
                         }
-                        alert('Комната была закрыта создателем');
+                        toast({
+                            title: 'Комната была закрыта создателем',
+                            status: 'info',
+                            duration: 4000,
+                            isClosable: true,
+                            position: 'top',
+                        });
                         navigate('/', { replace: true });
                     } else if (data.type === 'player_score_updated') {
                         console.log('Player score updated:', data);
@@ -240,7 +248,13 @@ const Room: React.FC = () => {
                     }
                 } else if (event.code === 1008 || event.code === 403) {
                     if (event.reason && event.reason.includes('not found')) {
-                        alert('Комната была закрыта или не существует');
+                        toast({
+                            title: 'Комната была закрыта или не существует',
+                            status: 'info',
+                            duration: 4000,
+                            isClosable: true,
+                            position: 'top',
+                        });
                         navigate('/');
                     }
                 } else if (isPlaying) {
@@ -263,7 +277,7 @@ const Room: React.FC = () => {
                 console.log('WebSocket closed on room unmount');
             }
         };
-    }, [roomId, user, wsBaseUrl, navigate, isAuthenticated, apiBaseUrl]);
+    }, [roomId, user, wsBaseUrl, navigate, isAuthenticated, apiBaseUrl, toast]);
 
     const handleSendChatMessage = async (message: string) => {
         if (!roomId || !user) return;
@@ -295,7 +309,14 @@ const Room: React.FC = () => {
             const response = await axios.get(`${apiBaseUrl}/api/rooms/${roomId}`);
             setRoom(response.data);
             
-            alert(joinResponse.data.message || 'Вы успешно присоединились к комнате');
+            toast({
+                title: 'Успешно!',
+                description: joinResponse.data.message || 'Вы успешно присоединились к комнате',
+                status: 'success',
+                duration: 4000,
+                isClosable: true,
+                position: 'top',
+            });
         } catch (err) {
             if (axios.isAxiosError(err) && err.response) {
                 if (err.response.status === 401) {
@@ -329,9 +350,23 @@ const Room: React.FC = () => {
             navigate('/');
         } catch (err) {
             if (axios.isAxiosError(err) && err.response) {
-                alert(err.response.data.detail || 'Не удалось закрыть комнату');
+                toast({
+                    title: 'Ошибка',
+                    description: err.response.data.detail || 'Не удалось закрыть комнату',
+                    status: 'error',
+                    duration: 4000,
+                    isClosable: true,
+                    position: 'top',
+                });
             } else {
-                alert('Произошла ошибка при соединении с сервером');
+                toast({
+                    title: 'Ошибка',
+                    description: 'Произошла ошибка при соединении с сервером',
+                    status: 'error',
+                    duration: 4000,
+                    isClosable: true,
+                    position: 'top',
+                });
             }
             setDeleting(false);
         }
@@ -343,12 +378,25 @@ const Room: React.FC = () => {
         }
         
         if (room.player_count < 2) {
-            alert('Для начала игры необходимо минимум 2 игрока');
+            toast({
+                title: 'Недостаточно игроков',
+                description: 'Для начала игры необходимо минимум 2 игрока',
+                status: 'warning',
+                duration: 4000,
+                isClosable: true,
+                position: 'top',
+            });
             return;
         }
         
         if (room.status !== 'waiting') {
-            alert('Игра уже была запущена');
+            toast({
+                title: 'Игра уже запущена',
+                status: 'info',
+                duration: 4000,
+                isClosable: true,
+                position: 'top',
+            });
             return;
         }
         
@@ -366,9 +414,23 @@ const Room: React.FC = () => {
         } catch (err) {
             console.error('Ошибка при запуске игры:', err);
             if (axios.isAxiosError(err) && err.response) {
-                alert(err.response.data.detail || 'Не удалось запустить игру');
+                toast({
+                    title: 'Ошибка',
+                    description: err.response.data.detail || 'Не удалось запустить игру',
+                    status: 'error',
+                    duration: 4000,
+                    isClosable: true,
+                    position: 'top',
+                });
             } else {
-                alert('Произошла ошибка при соединении с сервером');
+                toast({
+                    title: 'Ошибка',
+                    description: 'Произошла ошибка при соединении с сервером',
+                    status: 'error',
+                    duration: 4000,
+                    isClosable: true,
+                    position: 'top',
+                });
             }
         } finally {
             setDeleting(false);
