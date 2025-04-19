@@ -11,13 +11,13 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 
 from app.db.deps import get_db
-from app.models.word import WordWithAssociations
+from app.models.word import WordWithAssociations, DifficultyEnum
 from app.models.room import Room, GameStatus
 from app.models.player import Player, PlayerRole
 from app.models.user import User
 from app.core.security import get_current_user
 from app.api.endpoints.ws import manager
-from app.api.endpoints.words import get_random_word, get_next_word, get_word_by_id
+from app.api.endpoints.words import get_random_word, get_next_word, get_word_by_id_internal
 
 router = APIRouter()
 
@@ -118,7 +118,7 @@ async def send_game_state_update(room_code: str, db: Session):
         
         if room.current_word_id:
             try:
-                word_data = get_word_by_id(room.current_word_id, db)
+                word_data = get_word_by_id_internal(room.current_word_id, db)
                 if word_data:
                     current_word = word_data["word"]
                     associations = word_data["associations"]
@@ -194,7 +194,7 @@ async def get_game_state(
     current_word = ""
     if room.status == GameStatus.PLAYING and room.current_word_id:
         try:
-            word_data = get_word_by_id(room.current_word_id, db)
+            word_data = get_word_by_id_internal(room.current_word_id, db)
             if word_data and player.role == PlayerRole.EXPLAINING:
                 current_word = word_data["word"]
         except HTTPException:
@@ -304,7 +304,10 @@ async def start_game(
         player.score = 0
 
     # Выбираем случайное слово из базы 
-    word_data = get_random_word(db)
+    word_data = get_random_word(
+        difficulty=room.difficulty,
+        db=db
+    )
     
     if not word_data or "id" not in word_data:
         raise HTTPException(
@@ -448,7 +451,11 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
         
         # Выбираем новое слово для следующего раунда
         if room.current_word_id:
-            word_data = get_next_word(room.current_word_id, db)
+            word_data = get_next_word(
+                exclude_id=room.current_word_id,
+                difficulty=room.difficulty,
+                db=db
+            )
             if word_data and "id" in word_data:
                 room.current_word_id = word_data["id"]
         
@@ -594,7 +601,11 @@ async def end_turn(
     
     # Выбираем новое слово для следующего раунда
     if room.current_word_id:
-        word_data = get_next_word(room.current_word_id, db)
+        word_data = get_next_word(
+            exclude_id=room.current_word_id,
+            difficulty=room.difficulty,
+            db=db
+        )
         if word_data and "id" in word_data:
             room.current_word_id = word_data["id"]
     
@@ -793,7 +804,7 @@ async def submit_guess(
         )
     
     try:
-        word_data = get_word_by_id(room.current_word_id, db)
+        word_data = get_word_by_id_internal(room.current_word_id, db)
     except HTTPException:
         raise HTTPException(
             status_code=500,
@@ -858,7 +869,11 @@ async def submit_guess(
         
         # Выбираем новое слово
         if room.current_word_id:
-            word_data = get_next_word(room.current_word_id, db)
+            word_data = get_next_word(
+                exclude_id=room.current_word_id,
+                difficulty=room.difficulty,
+                db=db
+            )
             if word_data and "id" in word_data:
                 room.current_word_id = word_data["id"]
         

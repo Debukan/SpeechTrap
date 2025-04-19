@@ -67,7 +67,8 @@ async def create_room(
         max_players=room_data.max_players,
         current_round=0,
         rounds_total=room_data.rounds_total,
-        time_per_round=room_data.time_per_round
+        time_per_round=room_data.time_per_round,
+        difficulty=room_data.difficulty
     )
 
     # Добавление комнаты в базу данных

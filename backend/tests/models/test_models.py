@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.room import Room, GameStatus
 from app.models.player import Player, PlayerRole
-from app.models.word import WordWithAssociations
+from app.models.word import WordWithAssociations, DifficultyEnum
 from app.core.security import get_password_hash
 import uuid
 
@@ -54,10 +54,11 @@ def test_create_room(test_db: Session):
 def test_create_word(test_db: Session):
     """Тест создания слова в БД."""
     word_data = {
-        "word": "ТестовоеСлово",
+        "word": "Тестовое слово",
         "category": "Тест",
         "associations": ["ассоциация1", "тест2"],
         "is_active": True,
+        "difficulty": DifficultyEnum.basic
     }
     db_word = WordWithAssociations(**word_data)
     test_db.add(db_word)
@@ -71,6 +72,7 @@ def test_create_word(test_db: Session):
     assert db_word.is_active == word_data["is_active"]
     assert db_word.times_used == 0
     assert db_word.success_rate == 0.0
+    assert db_word.difficulty == word_data["difficulty"]
 
 def test_create_player(test_db: Session):
     """Тест создания игрока в БД и связи с пользователем и комнатой."""
@@ -131,7 +133,9 @@ def test_player_update_score(test_db: Session):
 def test_player_check_answer(test_db: Session):
     """Тест проверки ответа игрока."""
     word = WordWithAssociations(
-        word="Яблоко", category="Фрукты", associations=["красное", "фрукт", "круглое"]
+        word="Яблоко", category="Фрукты", associations=["красное", "фрукт", "круглое"],
+        is_active=True,
+        difficulty=DifficultyEnum.basic
     )
     test_db.add(word)
     test_db.commit()

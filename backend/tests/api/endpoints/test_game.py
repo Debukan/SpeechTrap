@@ -6,7 +6,7 @@ from app.main import app
 from app.models.user import User
 from app.models.room import Room, GameStatus
 from app.models.player import Player, PlayerRole
-from app.models.word import WordWithAssociations
+from app.models.word import WordWithAssociations, DifficultyEnum
 from app.core.security import get_password_hash, create_access_token
 
 client = TestClient(app)
@@ -34,7 +34,8 @@ def incorrect_guess_setup(test_db: Session):
         word="Банан",
         category="Фрукты",
         associations=["желтый", "обезьяна", "тропики"],
-        is_active=True
+        is_active=True,
+        difficulty=DifficultyEnum.basic
     )
     test_db.add(word)
     test_db.commit()

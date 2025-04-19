@@ -22,7 +22,7 @@ def init_data():
                             category=category,
                             word=word,
                             associations=associations,
-                            difficulty=difficulty  # Устанавливаем сложность
+                            difficulty=difficulty
                         )
                         db.add(word_entry)
             db.commit()

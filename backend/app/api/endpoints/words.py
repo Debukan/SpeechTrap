@@ -11,7 +11,7 @@ router = APIRouter()
 # Получение случайного слова из случайной категории
 @router.get("/random-word")
 def get_random_word(
-    difficulty: DifficultyEnum = Query(...),
+    difficulty: DifficultyEnum,
     db: Session = Depends(get_db)
 ):
     words = db.query(WordWithAssociations).filter(
@@ -66,10 +66,15 @@ def add_word(
 
 # Получение случайного слова, исключая слово с указанным ID
 @router.get("/next-word/{exclude_id}")
-def get_next_word(exclude_id: int, db: Session = Depends(get_db)):
+def get_next_word(
+    exclude_id: int,
+    difficulty: DifficultyEnum,
+    db: Session = Depends(get_db)
+):
     words = db.query(WordWithAssociations).filter(
         WordWithAssociations.id != exclude_id,
-        WordWithAssociations.is_active == True
+        WordWithAssociations.is_active == True,
+        WordWithAssociations.difficulty == difficulty
     ).all()
 
     if not words:
@@ -80,25 +85,31 @@ def get_next_word(exclude_id: int, db: Session = Depends(get_db)):
         "id": word.id,
         "category": word.category,
         "word": word.word,
-        "associations": word.associations
+        "associations": word.associations,
+        "difficulty": word.difficulty
     }
 
-# Получение слова по ID
-@router.get("/word-by-id/{word_id}")
-def get_word_by_id(word_id: int, db: Session = Depends(get_db)):
+def get_word_by_id_internal(word_id: int, db: Session):
     word = db.query(WordWithAssociations).filter(
         WordWithAssociations.id == word_id
     ).first()
-
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
-
     return {
         "id": word.id,
         "category": word.category,
         "word": word.word,
-        "associations": word.associations
+        "associations": word.associations,
+        "difficulty": word.difficulty
     }
+
+# Получение слова по ID
+@router.get("/word-by-id/{word_id}")
+def get_word_by_id(
+    word_id: int,
+    db: Session = Depends(get_db)
+):
+    return get_word_by_id_internal(word_id, db)
 
 # Получение случайного слова по категории
 @router.get("/{category}")
