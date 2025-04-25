@@ -14,6 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string, userData: User) => Promise<void>;
   logout: () => void;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,10 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         api.setAuthToken(storedToken);
-        
+
         // Запрос данных пользователя с использованием токена
         const result = await api.auth.getProfile(storedToken);
-        
+
         if (result.error) {
           throw new Error(result.error);
         }
@@ -83,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     if (token) {
-      api.auth.logout(token).catch(error => 
+      api.auth.logout(token).catch(error =>
         console.error('Ошибка при выходе:', error)
       );
     }
@@ -95,8 +96,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
   };
 
+  const updatePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    if (!token) {
+      throw new Error('Пользователь не авторизован');
+    }
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Не удалось изменить пароль');
+      }
+
+      // Обновляем токен, если сервер возвращает новый
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        api.setAuthToken(data.token);
+        setToken(data.token);
+      }
+
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Ошибка при смене пароля:', error);
+      return Promise.reject(error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{
+      user,
+      token,
+      login,
+      logout,
+      isAuthenticated,
+      updatePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
