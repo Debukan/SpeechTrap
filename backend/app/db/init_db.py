@@ -20,22 +20,30 @@ def init_db():
         try:
             # Проверяем, существуют ли уже таблицы
             with engine.connect() as connection:
-                result_users = connection.execute(text("""
+                result_users = connection.execute(
+                    text(
+                        """
                     SELECT EXISTS (
                         SELECT 1 
                         FROM information_schema.tables 
                         WHERE table_schema = 'public' 
                         AND table_name = 'users'
                     )
-                """))
-                result_words = connection.execute(text("""
+                """
+                    )
+                )
+                result_words = connection.execute(
+                    text(
+                        """
                     SELECT EXISTS (
                         SELECT 1 
                         FROM information_schema.tables 
                         WHERE table_schema = 'public' 
                         AND table_name = 'words'
                     )
-                """))
+                """
+                    )
+                )
                 users_exist = result_users.scalar()
                 words_exist = result_words.scalar()
                 if not (users_exist and words_exist):
@@ -50,6 +58,7 @@ def init_db():
                 raise
             print(f"Waiting for db... Attempt {attempt + 1}/{max_attempts}: {e}")
             time.sleep(2)
+
 
 if __name__ == "__main__":
     print("Starting database initialization...")

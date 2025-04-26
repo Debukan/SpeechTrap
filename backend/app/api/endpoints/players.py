@@ -18,7 +18,12 @@ async def create_player(player: PlayerCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/players/{player_id}/answer")
-def process_player_answer(player_id: int, word_id: int, guessed_association: str, db: Session = Depends(get_db)):
+def process_player_answer(
+    player_id: int,
+    word_id: int,
+    guessed_association: str,
+    db: Session = Depends(get_db),
+):
     """
     Обработка ответа игрока. Сравнивает его ответ с ассоциациями слова.
     Обновляет статистику игрока и слова.
@@ -28,7 +33,11 @@ def process_player_answer(player_id: int, word_id: int, guessed_association: str
     if not player:
         raise HTTPException(status_code=404, detail="Игрок не найден")
 
-    word = db.query(WordWithAssociations).filter(WordWithAssociations.id == word_id).first()
+    word = (
+        db.query(WordWithAssociations)
+        .filter(WordWithAssociations.id == word_id)
+        .first()
+    )
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
 

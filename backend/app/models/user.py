@@ -22,5 +22,5 @@ class User(SQLModel, table=True):
     def set_password(self, password: str):
         """Метод для хеширования пароля"""
         self.hashed_password = get_password_hash(password)
-    
+
     players: List[Player] = Relationship(back_populates="user")

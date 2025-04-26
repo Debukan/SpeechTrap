@@ -7,6 +7,7 @@ from app.models.word import WordWithAssociations, DifficultyEnum
 from app.core.security import get_password_hash
 import uuid
 
+
 def test_create_user(test_db: Session):
     """Тест создания пользователя в БД."""
     user_data = {
@@ -25,6 +26,7 @@ def test_create_user(test_db: Session):
     assert db_user.name == user_data["name"]
     assert db_user.hashed_password == user_data["hashed_password"]
     assert db_user.is_active == user_data["is_active"]
+
 
 def test_create_room(test_db: Session):
     """Тест создания комнаты в БД."""
@@ -51,6 +53,7 @@ def test_create_room(test_db: Session):
     assert not db_room.can_start()
     assert db_room.get_player_count() == 0
 
+
 def test_create_word(test_db: Session):
     """Тест создания слова в БД."""
     word_data = {
@@ -58,7 +61,7 @@ def test_create_word(test_db: Session):
         "category": "Тест",
         "associations": ["ассоциация1", "тест2"],
         "is_active": True,
-        "difficulty": DifficultyEnum.basic
+        "difficulty": DifficultyEnum.basic,
     }
     db_word = WordWithAssociations(**word_data)
     test_db.add(db_word)
@@ -73,6 +76,7 @@ def test_create_word(test_db: Session):
     assert db_word.times_used == 0
     assert db_word.success_rate == 0.0
     assert db_word.difficulty == word_data["difficulty"]
+
 
 def test_create_player(test_db: Session):
     """Тест создания игрока в БД и связи с пользователем и комнатой."""
@@ -113,6 +117,7 @@ def test_create_player(test_db: Session):
     assert db_player in user.players
     assert db_player in room.players
 
+
 def test_player_update_score(test_db: Session):
     """Тест обновления очков игрока."""
     user = User(name="Score User", email="score@example.com", hashed_password="pw")
@@ -130,12 +135,15 @@ def test_player_update_score(test_db: Session):
     assert player.score == 5
     test_db.commit()
 
+
 def test_player_check_answer(test_db: Session):
     """Тест проверки ответа игрока."""
     word = WordWithAssociations(
-        word="Яблоко", category="Фрукты", associations=["красное", "фрукт", "круглое"],
+        word="Яблоко",
+        category="Фрукты",
+        associations=["красное", "фрукт", "круглое"],
         is_active=True,
-        difficulty=DifficultyEnum.basic
+        difficulty=DifficultyEnum.basic,
     )
     test_db.add(word)
     test_db.commit()
@@ -147,6 +155,7 @@ def test_player_check_answer(test_db: Session):
     assert player.check_answer(word, "Красное") is True
     assert player.check_answer(word, "зеленое") is False
     assert player.check_answer(word, "фрукт") is True
+
 
 def test_room_add_remove_player(test_db: Session):
     """Тест добавления и удаления игрока из комнаты."""

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.deps import get_db
 from app.models.word import WordWithAssociations
 
+
 # Функция для загрузки начальных данных (слов) в базу данных
 def init_data():
     """
@@ -22,7 +23,7 @@ def init_data():
                             category=category,
                             word=word,
                             associations=associations,
-                            difficulty=difficulty
+                            difficulty=difficulty,
                         )
                         db.add(word_entry)
             db.commit()
@@ -31,6 +32,7 @@ def init_data():
             print("Data already exists in the database")
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     init_data()
