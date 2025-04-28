@@ -1,7 +1,6 @@
 import json
 import logging
-from fastapi import FastAPI, Depends, WebSocket, Request, status
-from fastapi.websockets import WebSocketDisconnect
+from fastapi import FastAPI, Depends, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -9,7 +8,6 @@ from sqlalchemy import text
 from app.models.word import WordWithAssociations
 from app.db.deps import get_db
 from app.core.config import settings
-from contextlib import asynccontextmanager
 from datetime import datetime
 from app.schemas.room import RoomResponse
 from app.schemas.player import PlayerResponse
