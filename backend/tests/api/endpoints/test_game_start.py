@@ -62,7 +62,8 @@ def start_game_setup(test_db: Session):
 def test_start_game_isolated(test_db: Session, start_game_setup):
     """Изолированный тест начала игры с подменой всех асинхронных функций."""
     with patch(
-        "app.api.endpoints.game.start_periodic_game_state_updates", new=MagicMock()
+        "app.api.endpoints.game.start_periodic_game_state_updates",
+        new_callable=AsyncMock,
     ), patch(
         "app.api.endpoints.game.manager.broadcast", new_callable=AsyncMock
     ) as mock_broadcast, patch(

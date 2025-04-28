@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlmodel import Session
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
@@ -39,32 +40,30 @@ async def create_room(
     Возвращает:
     - Созданная комната.
     """
-    # Проверка, находится ли пользователь уже в какой-либо активной комнате
-    active_player = (
-        db.query(Player)
-        .join(Room)
-        .filter(Player.user_id == current_user.id, Room.status != GameStatus.FINISHED)
-        .first()
-    )
+    # Проверка, что код не пустой
+    if not room_data.code:
+        raise HTTPException(status_code=400, detail="Код комнаты не может быть пустым")
 
+    existing_room = db.scalar(select(Room).where(Room.code == room_data.code))
+    if existing_room:
+        raise HTTPException(
+            status_code=400, detail="Комната с таким кодом уже существует"
+        )
+
+    active_player = (
+        db.scalar(
+            select(Player)
+            .join(Room)
+            .where(Player.user_id == current_user.id, Room.status != GameStatus.FINISHED)
+        )
+    )
     if active_player:
-        room = db.query(Room).filter(Room.id == active_player.room_id).first()
+        room = db.scalar(select(Room).where(Room.id == active_player.room_id))
         if room:
             raise HTTPException(
                 status_code=400,
                 detail=f"Вы уже находитесь в активной комнате с кодом {room.code}. Покиньте существующую комнату перед созданием новой.",
             )
-
-    # Проверка, что код не пустой
-    if not room_data.code:
-        raise HTTPException(status_code=400, detail="Код комнаты не может быть пустым")
-
-    # Проверка уникальности кода комнаты
-    existing_room = db.query(Room).filter(Room.code == room_data.code).first()
-    if existing_room:
-        raise HTTPException(
-            status_code=400, detail="Комната с таким кодом уже существует"
-        )
 
     # Создание новой комнаты
     new_room = Room(
@@ -116,7 +115,7 @@ async def get_active_rooms(db: Session = Depends(get_db)):
     """
     Получает список активных комнат
     """
-    rooms = db.query(Room).filter(Room.status != GameStatus.FINISHED).all()
+    rooms = db.scalars(select(Room).where(Room.status != GameStatus.FINISHED)).all()
 
     return [
         RoomResponse(
@@ -164,7 +163,7 @@ async def get_room_by_code(room_code: str, db: Session = Depends(get_db)):
     Возвращает:
     - Информация о комнате и список игроков.
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
 
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
@@ -172,7 +171,7 @@ async def get_room_by_code(room_code: str, db: Session = Depends(get_db)):
     players_list = []
     if hasattr(room, "players") and room.players:
         for player in room.players:
-            user = db.query(User).filter(User.id == player.user_id).first()
+            user = db.scalar(select(User).where(User.id == player.user_id))
             if user:
                 players_list.append(
                     PlayerResponse(
@@ -230,20 +229,21 @@ async def join_room_by_code(
         )
 
     # Проверка существования комнаты
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Проверка существования пользователя
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     # Проверка, не присоединен ли пользователь уже к комнате
     existing_player = (
-        db.query(Player)
-        .filter(Player.user_id == user_id, Player.room_id == room.id)
-        .first()
+        db.scalar(
+            select(Player)
+            .where(Player.user_id == user_id, Player.room_id == room.id)
+        )
     )
     if existing_player:
         raise HTTPException(status_code=400, detail="Пользователь уже в комнате")
@@ -277,7 +277,7 @@ async def delete_room(
 ):
     """Удаление комнаты и всех связанных игроков"""
     # Проверка существования комнаты
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
@@ -321,15 +321,16 @@ async def leave_room(
     """
     Позволяет пользователю выйти из лобби.
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Находим игрока в комнате
     player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.user_id == current_user.id)
-        .first()
+        db.scalar(
+            select(Player)
+            .where(Player.room_id == room.id, Player.user_id == current_user.id)
+        )
     )
 
     if not player:
@@ -392,15 +393,16 @@ async def send_lobby_chat_message(
     Возвращает:
     - Подтверждение отправки сообщения
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Проверяем, что пользователь находится в комнате
     player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.user_id == current_user.id)
-        .first()
+        db.scalar(
+            select(Player)
+            .where(Player.room_id == room.id, Player.user_id == current_user.id)
+        )
     )
 
     if not player:

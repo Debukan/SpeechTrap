@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from unittest.mock import patch
 from app.main import app
 from app.models.user import User
 from app.core.security import get_password_hash, create_access_token
@@ -152,3 +153,64 @@ def test_update_profile(test_db: Session):
 
     login_response = client.post("/api/users/login", json=login_data)
     assert login_response.status_code == 200
+
+
+def test_logout_success(monkeypatch):
+    token = "dummy.token.value"
+    monkeypatch.setenv("TESTING", "True")
+    with patch("app.api.endpoints.users.invalidate_token") as mock_inval:
+        mock_inval.return_value = None
+        response = client.post(
+            "/api/users/logout", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert response.status_code == 200
+        assert response.json()["message"] == "Успешный выход из системы"
+
+
+def test_logout_failure(monkeypatch):
+    token = "dummy.token.value"
+    with patch("app.api.endpoints.users.invalidate_token") as mock_inval:
+        mock_inval.side_effect = Exception("fail")
+        response = client.post(
+            "/api/users/logout", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert response.status_code == 500
+        assert "Ошибка при выходе" in response.json()["detail"]
+
+
+def test_update_profile_email_conflict(test_db):
+    from app.models.user import User
+
+    u1 = User(
+        name="U1", email="u1@example.com", hashed_password=get_password_hash("p1")
+    )
+    u2 = User(
+        name="U2", email="u2@example.com", hashed_password=get_password_hash("p2")
+    )
+    test_db.add_all([u1, u2])
+    test_db.commit()
+    token = create_access_token(data={"sub": u1.email})
+    headers = {"Authorization": f"Bearer {token}"}
+    data = {"email": u2.email}
+    response = client.put("/api/users/me", json=data, headers=headers)
+    assert response.status_code == 400
+    assert "Email уже используется" in response.json()["detail"]
+
+
+def test_update_profile_invalid_current_password(test_db):
+    user = User(
+        name="U3", email="u3@example.com", hashed_password=get_password_hash("orig")
+    )
+    test_db.add(user)
+    test_db.commit()
+    test_db.refresh(user)
+    token = create_access_token(data={"sub": user.email})
+    headers = {"Authorization": f"Bearer {token}"}
+    data = {
+        "new_password": "newpass1",
+        "confirm_password": "newpass1",
+        "current_password": "wrong",
+    }
+    response = client.put("/api/users/me", json=data, headers=headers)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Неверный текущий пароль"

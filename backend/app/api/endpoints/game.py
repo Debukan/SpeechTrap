@@ -5,6 +5,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, ORJSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from sqlalchemy.sql import func
 from typing import Dict, Any, List
 from pydantic import BaseModel
@@ -58,7 +59,7 @@ async def send_game_state_update(room_code: str, db: Session):
     - room_code: Код комнаты
     - db: Сессия базы данных
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         return
 
@@ -68,10 +69,9 @@ async def send_game_state_update(room_code: str, db: Session):
     db.expire_all()
 
     current_player = None
-    explaining_player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
-        .first()
+    explaining_player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
     )
 
     if explaining_player:
@@ -79,7 +79,7 @@ async def send_game_state_update(room_code: str, db: Session):
 
     players = []
     for p in room.players:
-        user = db.query(User).filter(User.id == p.user_id).first()
+        user = db.scalar(select(User).where(User.id == p.user_id))
         if user:
             players.append(
                 {
@@ -151,7 +151,7 @@ async def start_periodic_game_state_updates(room_code: str, db: Session):
     try:
         while True:
             db.expire_all()
-            room = db.query(Room).filter(Room.code == room_code).first()
+            room = db.scalar(select(Room).where(Room.code == room_code))
             if not room or room.status != GameStatus.PLAYING:
                 break
 
@@ -179,14 +179,13 @@ async def get_game_state(
     Возвращает:
     - Состояние игры: текущее слово, игроки, текущий раунд и т.д.
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
-    player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.user_id == current_user.id)
-        .first()
+    player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.user_id == current_user.id)
     )
 
     if not player:
@@ -205,10 +204,9 @@ async def get_game_state(
             pass
 
     current_player = None
-    explaining_player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
-        .first()
+    explaining_player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
     )
 
     if explaining_player:
@@ -217,7 +215,7 @@ async def get_game_state(
     # Формируем список игроков
     players = []
     for p in room.players:
-        user = db.query(User).filter(User.id == p.user_id).first()
+        user = db.scalar(select(User).where(User.id == p.user_id))
         if user:
             players.append(
                 {
@@ -246,6 +244,8 @@ async def get_game_state(
                 "duration": room.time_per_round,
                 "end_time": start_time + room.time_per_round,
             }
+    elif room.status == GameStatus.WAITING:
+        time_left = room.time_per_round
 
     response = {
         "currentWord": current_word,
@@ -278,7 +278,7 @@ async def start_game(
     Возвращает:
     - Сообщение об успешном начале игры или ошибку.
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
@@ -378,7 +378,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
         if room_code in timer_tasks:
             del timer_tasks[room_code]
 
-        room = db.query(Room).filter(Room.code == room_code).first()
+        room = db.scalar(select(Room).where(Room.code == room_code))
         if not room or room.status != GameStatus.PLAYING:
             if room_code in room_timers:
                 del room_timers[room_code]
@@ -387,10 +387,9 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
             return
 
         # Находим текущего объясняющего игрока
-        current_player = (
-            db.query(Player)
-            .filter(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
-            .first()
+        current_player = db.scalar(
+            select(Player)
+            .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
         )
 
         if not current_player:
@@ -400,9 +399,9 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
         current_player.role = PlayerRole.GUESSING
 
         # Находим всех игроков в комнате и сортируем их по ID
-        players = (
-            db.query(Player).filter(Player.room_id == room.id).order_by(Player.id).all()
-        )
+        players = db.scalars(
+            select(Player).where(Player.room_id == room.id).order_by(Player.id)
+        ).all()
 
         # Находим индекс текущего игрока
         current_index = players.index(current_player)
@@ -467,7 +466,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
         }
 
         # Отправляем всем сообщение о смене игрока и обновлении таймера
-        user = db.query(User).filter(User.id == next_player.user_id).first()
+        user = db.scalar(select(User).where(User.id == next_player.user_id))
         await manager.broadcast(
             room_code,
             {
@@ -517,7 +516,7 @@ async def end_turn(
     - Сообщение об успешном завершении хода или ошибку.
     """
     # Находим комнату по коду
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
@@ -526,10 +525,9 @@ async def end_turn(
         raise HTTPException(status_code=400, detail="Игра не запущена")
 
     # Находим текущего объясняющего игрока
-    current_player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
-        .first()
+    current_player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
     )
 
     if not current_player:
@@ -546,9 +544,9 @@ async def end_turn(
     current_player.role = PlayerRole.GUESSING
 
     # Находим всех игроков в комнате и сортируем их по ID
-    players = (
-        db.query(Player).filter(Player.room_id == room.id).order_by(Player.id).all()
-    )
+    players = db.scalars(
+        select(Player).where(Player.room_id == room.id).order_by(Player.id)
+    ).all()
 
     # Находим индекс текущего игрока
     current_index = players.index(current_player)
@@ -560,6 +558,9 @@ async def end_turn(
     # Назначаем следующего игрока объясняющим
     next_player.role = PlayerRole.EXPLAINING
 
+    next_player_id = next_player.id
+    next_user = db.scalar(select(User).where(User.id == next_player.user_id))
+    next_player_name = next_user.name if next_user else "Неизвестный"
     room.current_round += 1
 
     # Если достигли максимального числа раундов, завершаем игру
@@ -612,25 +613,33 @@ async def end_turn(
         "end_time": time.time() + room.time_per_round,
     }
 
+    if room_code in timer_tasks:
+        try:
+            timer_tasks[room_code].cancel()
+        except Exception:
+            pass
+    timer_task = asyncio.create_task(
+        start_round_timer(room_code, room.time_per_round, db)
+    )
+    timer_tasks[room_code] = timer_task
+
     await send_game_state_update(room_code, db)
 
     # Отправляем всем сообщение о смене игрока
-    async def broadcast_turn_changed():
-        user = db.query(User).filter(User.id == next_player.user_id).first()
+    async def broadcast_turn_changed(player_id: int, player_name: str):
         await manager.broadcast(
             room_code,
             {
                 "type": "turn_changed",
-                "message": f"Ход переходит к игроку {user.name if user else 'Неизвестный'}",
-                "current_player": str(next_player.id),
+                "message": f"Ход переходит к игроку {player_name}",
+                "current_player": str(player_id),
                 "new_timer": True,
                 "timer_start": time.time(),
                 "time_per_round": room.time_per_round,
             },
         )
 
-    background_tasks.add_task(broadcast_turn_changed)
-
+    background_tasks.add_task(broadcast_turn_changed, next_player_id, next_player_name)
     return {"success": True, "message": "Ход успешно завершен"}
 
 
@@ -652,15 +661,14 @@ async def leave_game(
     - Сообщение об успешном выходе из игры или ошибку.
     """
     # Находим комнату по коду
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Находим игрока в комнате
-    player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.user_id == current_user.id)
-        .first()
+    player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.user_id == current_user.id)
     )
 
     if not player:
@@ -668,82 +676,132 @@ async def leave_game(
             status_code=404, detail="Вы не являетесь участником этой комнаты"
         )
 
-    # Сохраняем необходимые данные перед удалением игрока
-    player_id = player.id
+    player_id_leaving = player.id
     username = current_user.name
+    is_explainer_leaving = (
+        player.role == PlayerRole.EXPLAINING and room.status == GameStatus.PLAYING
+    )
+    is_creator = (
+        room.players
+        and len(room.players) > 0
+        and room.players[0].id == player_id_leaving
+    )
+    is_waiting_room = room.status == GameStatus.WAITING
+    is_creator_leaving_waiting_room = is_creator and is_waiting_room
+    room_id = room.id
+    initial_player_count = len(room.players)
+    next_explainer_id = None
 
     # Если игрок является объясняющим, нужно передать ход следующему
-    if player.role == PlayerRole.EXPLAINING and room.status == GameStatus.PLAYING:
-        players = (
-            db.query(Player).filter(Player.room_id == room.id).order_by(Player.id).all()
-        )
+    if is_explainer_leaving and initial_player_count > 1:
+        players = db.scalars(
+            select(Player).where(Player.room_id == room.id).order_by(Player.id)
+        ).all()
+        current_index = -1
+        for i, p in enumerate(players):
+            if p.id == player_id_leaving:
+                current_index = i
+                break
 
-        current_index = players.index(player)
-        next_index = (current_index + 1) % len(players)
-
-        # Если есть другие игроки, передаем ход
-        if len(players) > 1:
-            next_player = players[next_index]
-            next_player.role = PlayerRole.EXPLAINING
+        if current_index != -1:
+            for i in range(1, len(players)):
+                next_idx_candidate = (current_index + i) % len(players)
+                if players[next_idx_candidate].id != player_id_leaving:
+                    next_explainer_id = players[next_idx_candidate].id
+                    break
 
     # Удаляем игрока из комнаты
     db.delete(player)
     db.commit()
 
-    db.expire_all()
     room_deleted = False
+    state_update_sent_sync = False
+    remaining_players_count = db.scalars(
+        select(Player).where(Player.room_id == room_id)
+    ).all()
+    remaining_players_count = len(remaining_players_count)
+    room_after_leave = db.get(Room, room_id)
 
-    # Если это был создатель комнаты и игра еще не началась, закрываем комнату
-    if (
-        room.players
-        and len(room.players) > 0
-        and room.players[0].id == player.id
-        and room.status == GameStatus.WAITING
-    ):
-        for p in room.players:
+    if is_creator_leaving_waiting_room:
+        remaining_players_to_delete = db.scalars(
+            select(Player).where(Player.room_id == room_id)
+        ).all()
+        for p in remaining_players_to_delete:
             db.delete(p)
-        db.delete(room)
-    elif len(room.players) <= 1:
-        if room.players:
-            if room.status == GameStatus.PLAYING:
-                last_player = room.players[0]
-                last_player.score_total += last_player.score
-                db.commit()
-            db.delete(room.players[0])
-        db.delete(room)
+        room_to_delete = db.get(Room, room_id)
+        if room_to_delete:
+            db.delete(room_to_delete)
+        db.commit()
         room_deleted = True
-    elif room.status == GameStatus.PLAYING:
-        remaining_players = len(room.players)
-        if remaining_players < 2:
-            room.status = GameStatus.WAITING
-            last_player = room.players[0]
-            last_player.score_total += last_player.score
-            last_player.score = 0
-            last_player.role = PlayerRole.WAITING
-            db.commit()
+    else:
+        if room_after_leave:
+            if remaining_players_count == 0:
+                db.delete(room_after_leave)
+                db.commit()
+                room_deleted = True
+            elif remaining_players_count == 1:
+                if not is_waiting_room:
+                    room_check_before_delete = db.get(Room, room_id)
+                    if (
+                        room_check_before_delete
+                        and room_check_before_delete.status == GameStatus.PLAYING
+                    ):
+                        await send_game_state_update(room_code, db)
+                        print(
+                            f"Game state update sent (before final deletion) after player {player_id_leaving} left"
+                        )
+                        state_update_sent_sync = True
+
+                last_player = db.scalar(
+                    select(Player).where(Player.room_id == room_id)
+                )
+                if last_player:
+                    if not is_waiting_room:
+                        if last_player.score_total is None:
+                            last_player.score_total = 0
+                        last_player.score_total += last_player.score
+                    db.delete(last_player)
+                db.delete(room_after_leave)
+                if room_code in room_timers:
+                    del room_timers[room_code]
+                if room_code in timer_tasks:
+                    try:
+                        timer_tasks[room_code].cancel()
+                    except Exception:
+                        pass
+                    del timer_tasks[room_code]
+                db.commit()
+                room_deleted = True
+            elif (
+                is_explainer_leaving
+                and next_explainer_id is not None
+                and room_after_leave.status == GameStatus.PLAYING
+            ):
+                next_player_obj = db.get(Player, next_explainer_id)
+                if next_player_obj:
+                    next_player_obj.role = PlayerRole.EXPLAINING
+                    db.commit()
+                    await send_game_state_update(room_code, db)
+                    print(
+                        f"Game state update sent (after new explainer assigned) after player {player_id_leaving} left"
+                    )
+                    state_update_sent_sync = True
 
     # Отправляем всем оставшимся игрокам сообщение о выходе игрока
     async def broadcast_player_left():
         try:
             player_left_message = {
                 "type": "player_left",
-                "player_id": player_id,
+                "player_id": player_id_leaving,
                 "message": f"Игрок {username} покинул игру",
                 "timestamp": time.time(),
             }
-
             await manager.broadcast(room_code, player_left_message)
 
-            await send_game_state_update(room_code, db)
-            print(f"Game state update sent after player {player_id} left")
         except Exception as e:
             print(f"Error in broadcast_player_left: {e}")
 
-    # Запускаем задачу и ждем небольшую задержку, чтобы она успела запуститься
     background_tasks.add_task(broadcast_player_left)
-
-    if not room_deleted:
-        db.refresh(room)
 
     return {"success": True, "message": "Вы успешно покинули игру"}
 
@@ -767,7 +825,7 @@ async def submit_guess(
     Возвращает:
     - Результат проверки догадки.
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
@@ -776,10 +834,9 @@ async def submit_guess(
         raise HTTPException(status_code=400, detail="Игра не запущена")
 
     # Находим игрока в комнате
-    player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.user_id == current_user.id)
-        .first()
+    player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.user_id == current_user.id)
     )
 
     if not player:
@@ -810,10 +867,9 @@ async def submit_guess(
         player.score += 10
         player.correct_answers += 1
 
-        explaining_player = (
-            db.query(Player)
-            .filter(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
-            .first()
+        explaining_player = db.scalar(
+            select(Player)
+            .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
         )
 
         if explaining_player:
@@ -861,6 +917,8 @@ async def submit_guess(
 
         # Сохраняем старое слово для сообщения
         old_word = word_data["word"]
+        player_id_correct = player.id
+        player_name_correct = current_user.name
 
         # Выбираем новое слово
         if room.current_word_id:
@@ -891,21 +949,23 @@ async def submit_guess(
         await send_game_state_update(room_code, db)
 
         # Отправляем всем сообщение о правильной догадке
-        async def broadcast_correct_guess():
+        async def broadcast_correct_guess(p_id: int, p_name: str, word: str):
             await manager.broadcast(
                 room_code,
                 {
                     "type": "correct_guess",
-                    "player_id": player.id,
-                    "word": old_word,
-                    "message": f"Игрок {current_user.name} правильно угадал слово: {old_word}",
+                    "player_id": p_id,
+                    "word": word,
+                    "message": f"Игрок {p_name} правильно угадал слово: {word}",
                     "new_timer": True,
                     "timer_start": time.time(),
                     "time_per_round": room.time_per_round,
                 },
             )
 
-        background_tasks.add_task(broadcast_correct_guess)
+        background_tasks.add_task(
+            broadcast_correct_guess, player_id_correct, player_name_correct, old_word
+        )
 
         return {"correct": True, "message": "Поздравляем! Вы угадали слово."}
     else:
@@ -953,15 +1013,14 @@ async def send_chat_message(
     Возвращает:
     - Подтверждение отправки сообщения
     """
-    room = db.query(Room).filter(Room.code == room_code).first()
+    room = db.scalar(select(Room).where(Room.code == room_code))
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Проверяем, что пользователь находится в комнате
-    player = (
-        db.query(Player)
-        .filter(Player.room_id == room.id, Player.user_id == current_user.id)
-        .first()
+    player = db.scalar(
+        select(Player)
+        .where(Player.room_id == room.id, Player.user_id == current_user.id)
     )
 
     if not player:
