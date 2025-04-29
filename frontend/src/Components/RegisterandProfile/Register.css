@@ -3,82 +3,66 @@
     margin: 0 auto;
     padding: 20px;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f9f9f9;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e0f7fa, #80deea);/* Градиентный фон */
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
     text-align: center;
-    margin-bottom: 20px;
-}
-
-form div {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 14px;
-    font-family: inherit;
-    text-align: left;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
+    color: #333;
 }
 
 .error-message {
     color: red;
     margin-bottom: 15px;
-    padding: 8px;
-    background-color: #ffeeee;
-    border: 1px solid #ffcccc;
+    font-size: 14px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
     border-radius: 4px;
 }
 
-.login-link {
-    margin-top: 15px;
-    text-align: center;
+input:focus {
+    border-color: #007bff; /* Цвет фокуса */
+    outline: none; /* Убираем стандартный контур */
 }
 
-.login-link button {
-    background: none;
+button {
+    width: 100%; /* Кнопки занимают всю ширину контейнера */
+    padding: 10px;
     border: none;
-    color: #007bff;
+    border-radius: 4px; /* Закругляем углы */
+    background-color: #90caf9; /* Цвет фона кнопок */
+    color: white;
     cursor: pointer;
-    padding: 0;
-    font-size: 1em;
-    width: auto;
+    margin-top: 5px;
+    font-size: 16px; /* Увеличиваем размер шрифта */
+    transition: background 0.3s ease, transform 0.2s ease; /* Плавные переходы */
 }
 
-.login-link button:hover {
-    text-decoration: underline;
-    background: none;
-    color: #0056b3;
+button:hover {
+    background: linear-gradient(90deg, #0056b3, #004494); /* Темнее при наведении */
+    transform: translateY(-2px); /* Легкий подъем кнопки при наведении */
+}
+button[disabled] {
+    background-color: #ccc; /* Цвет кнопки при загрузке */
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 15px;
 }

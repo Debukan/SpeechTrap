@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Menu.css';
+import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
 
 const Menu: React.FC = () => {
@@ -32,19 +33,30 @@ const Menu: React.FC = () => {
     };
 
     return (
-        <div className="menu-container">
-            <h2>Главное меню</h2>
-            
+        <div className="max-w-md mx-auto p-6 rounded-lg shadow-lg bg-gradient-to-br from-cyan-100 to-cyan-300">
+            <h2 className="text-center text-2xl font-semibold mb-6 text-gray-800">Главное меню</h2>
+
             {isAuthenticated ? (
                 <>
-                    <button onClick={handleCreateRoom}>Создать комнату</button>
-                    <button onClick={handleJoinRoom}>Присоединиться к комнате</button>
+                    <Button onClick={handleCreateRoom} className="w-full mb-4">
+                        Создать комнату
+                    </Button>
+                    <Button onClick={handleJoinRoom} className="w-full">
+                        Присоединиться к комнате
+                    </Button>
                 </>
             ) : (
                 <>
-                    <button onClick={handleLogin}>Войти</button>
-                    <button onClick={handleRegister}>Зарегистрироваться</button>
-                    <p className="login-prompt">Войдите или зарегистрируйтесь, чтобы создать или присоединиться к комнате</p>
+                    <Button onClick={handleRegister} className="w-full mb-4">
+                        Зарегистрироваться
+                    </Button>
+                    <Button onClick={handleLogin} className="w-full">
+                        Войти
+                    </Button>
+
+                    <p className="mt-4 text-center text-gray-700">
+                        Войдите или зарегистрируйтесь, чтобы создать или присоединиться к комнате.
+                    </p>
                 </>
             )}
         </div>

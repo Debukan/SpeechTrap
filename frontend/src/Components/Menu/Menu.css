@@ -3,40 +3,39 @@
     margin: 0 auto;
     padding: 20px;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f9f9f9;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e0f7fa, #80deea); /* Градиентный фон */
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-
 h2 {
     text-align: center;
-    margin-bottom: 20px;
+    color: #333;
 }
-
-.menu ul {
-    list-style-type: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.menu ul li {
-    margin: 5px 0;
-}
-
-.menu ul li button {
-    padding: 10px 20px;
+button {
+    width: 100%; /* Кнопки занимают всю ширину контейнера */
+    padding: 10px;
     border: none;
-    border-radius: 4px;
-    background-color: #007bff;
+    border-radius: 4px; /* Закругляем углы */
+    background-color: #90caf9; /* Цвет фона кнопок */
     color: white;
     cursor: pointer;
-    transition: background-color 0.3s;
-    width: auto;
-    text-align: center;
+    margin-top: 5px;
+    font-size: 16px; /* Увеличиваем размер шрифта */
+    transition: background 0.3s ease, transform 0.2s ease; /* Плавные переходы */
 }
 
-.menu ul li button:hover {
-    background-color: #0056b3;
+button:hover {
+    background: linear-gradient(90deg, #0056b3, #004494); /* Темнее при наведении */
+    transform: translateY(-2px); /* Легкий подъем кнопки при наведении */
+}
+
+.login-prompt {
+    margin-top: 15px;
+}
+
+/* Новый стиль для центрирования кнопок */
+.menu-container {
+    display: flex; /* Используем flexbox для центрирования */
+    flex-direction: column; /* Располагаем элементы в колонку */
+    align-items: center; /* Центрируем элементы по горизонтали */
 }
