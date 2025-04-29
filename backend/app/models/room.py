@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 from app.models.base import Base
 from app.models.player import Player
+from app.models.word import DifficultyEnum
 
 
 class GameStatus(str, Enum):
@@ -33,6 +34,7 @@ class Room(SQLModel, table=True):
 
     # Настройки игры
     time_per_round: int = Field(default=60)
+    difficulty: DifficultyEnum = Field(default=DifficultyEnum.basic)
 
     players: List["Player"] = Relationship(back_populates="room")
     current_word_id: Optional[int] = Field(

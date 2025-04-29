@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict, field_serializer
 from datetime import datetime
 from typing import List, Optional
 from app.models.room import GameStatus
+from app.models.word import DifficultyEnum
 from app.schemas.player import PlayerResponse
 
 
@@ -9,10 +10,8 @@ class RoomBase(BaseModel):
     max_players: int = 8
     rounds_total: int = 10
     time_per_round: int = 60
+    difficulty: DifficultyEnum = DifficultyEnum.basic
 
-
-class RoomCreate(RoomBase):
-    pass
 
 class RoomCreate(RoomBase):
     code: str  # Код комнаты, заданный пользователем
@@ -31,11 +30,10 @@ class RoomResponse(RoomBase):
     players: List[PlayerResponse]
     
     # Cериализатор для datetime
-    @field_serializer('created_at')
+    @field_serializer('created_at', when_used="json")
     def serialize_dt(self, dt: datetime):
         return dt.isoformat()
 
     model_config = ConfigDict(
         from_attributes=True,
-        json_encoders={datetime: lambda dt: dt.isoformat()}
     )

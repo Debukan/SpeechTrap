@@ -53,6 +53,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     new_password: Optional[str] = Field(None, min_length=8, max_length=30)
     confirm_password: Optional[str] = None
+    current_password: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod

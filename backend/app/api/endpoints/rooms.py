@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlmodel import Session
+from pydantic import BaseModel
 from typing import List
 from datetime import datetime
 from typing import Optional
 import asyncio
+import time
 
 from app.db.deps import get_db
 from app.core.security import get_current_user
@@ -16,9 +18,12 @@ from .ws import manager
 
 router = APIRouter()
 
+# Модель для чата
+class ChatMessageRequest(BaseModel):
+    message: str
 
 @router.post("/create", response_model=RoomResponse)
-def create_room(
+async def create_room(
     room_data: RoomCreate, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -57,12 +62,13 @@ def create_room(
 
     # Создание новой комнаты
     new_room = Room(
-        code=room_data.code,  # Используем код, заданный пользователем
-        status=GameStatus.WAITING,  # Статус по умолчанию
+        code=room_data.code,
+        status=GameStatus.WAITING,
         max_players=room_data.max_players,
         current_round=0,
         rounds_total=room_data.rounds_total,
-        time_per_round=room_data.time_per_round
+        time_per_round=room_data.time_per_round,
+        difficulty=room_data.difficulty
     )
 
     # Добавление комнаты в базу данных
@@ -103,7 +109,7 @@ def create_room(
 
 
 @router.get("/active", response_model=List[RoomResponse])
-def get_active_rooms(db: Session = Depends(get_db)):
+async def get_active_rooms(db: Session = Depends(get_db)):
     """
     Получает список активных комнат
     """
@@ -135,7 +141,7 @@ def get_active_rooms(db: Session = Depends(get_db)):
 
 
 @router.get("/{room_code}", response_model=RoomResponse)
-def get_room_by_code(room_code: str, db: Session = Depends(get_db)):
+async def get_room_by_code(room_code: str, db: Session = Depends(get_db)):
     """
     Получение информации о комнате по коду.
     
@@ -150,6 +156,21 @@ def get_room_by_code(room_code: str, db: Session = Depends(get_db)):
     if not room:
         raise HTTPException(status_code=404, detail="Комната не найдена")
     
+    players_list = []
+    if hasattr(room, "players") and room.players:
+        for player in room.players:
+            user = db.query(User).filter(User.id == player.user_id).first()
+            if user:
+                players_list.append(
+                    PlayerResponse(
+                        id=player.id,
+                        name=user.name,
+                        role=player.role,
+                        score=player.score or 0,
+                        score_total=player.score_total or 0
+                    )
+                )
+    
     return RoomResponse(
         id=room.id,
         code=room.code,
@@ -162,18 +183,12 @@ def get_room_by_code(room_code: str, db: Session = Depends(get_db)):
         player_count=len(room.players) if hasattr(room, "players") and room.players else 0,
         current_word_id=room.current_word_id if hasattr(room, "current_word_id") else None,
         is_full=room.is_full(),
-        players=[
-            PlayerResponse(
-                id=player.id,
-                name=player.user.name if hasattr(player, "user") and player.user else f"Player {player.id}"
-            )
-            for player in room.players
-        ] if hasattr(room, "players") and room.players else []
+        players=players_list
     )
 
 
 @router.post("/join/{room_code}/{user_id}")
-def join_room_by_code(
+async def join_room_by_code(
     room_code: str, 
     user_id: int,
     background_tasks: BackgroundTasks,
@@ -230,41 +245,8 @@ def join_room_by_code(
 
     return {"message": f"Пользователь {user.name} успешно присоединился к комнате {room.code}"}
 
-
-@router.post("/start/{room_code}")
-def start_game(
-    room_code: str,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Запуск игры в комнате"""
-    room = db.query(Room).filter(Room.code == room_code).first()
-    if not room:
-        raise HTTPException(status_code=404, detail="Комната не найдена")
-    
-    if room.status != GameStatus.WAITING:
-        raise HTTPException(status_code=400, detail="Игра уже начата или завершена")
-    
-    if len(room.players) < 2:
-        raise HTTPException(status_code=400, detail="Для начала игры нужно минимум 2 игрока")
-    
-    room.status = GameStatus.PLAYING
-    db.commit()
-    
-    async def broadcast_game_started():
-        await manager.broadcast(
-            room_code, 
-            {"type": "game_started"}
-        )
-    
-    background_tasks.add_task(broadcast_game_started)
-    
-    return {"message": "Игра успешно начата"}
-
-
 @router.delete("/{room_code}")
-def delete_room(
+async def delete_room(
     room_code: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -300,3 +282,115 @@ def delete_room(
     db.commit()
     
     return {"message": "Комната успешно удалена"}
+
+
+@router.post("/{room_code}/leave")
+async def leave_room(
+    room_code: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Позволяет пользователю выйти из лобби.
+    """
+    room = db.query(Room).filter(Room.code == room_code).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    
+    # Находим игрока в комнате
+    player = db.query(Player).filter(
+        Player.room_id == room.id,
+        Player.user_id == current_user.id
+    ).first()
+    
+    if not player:
+        raise HTTPException(
+            status_code=404,
+            detail="Вы не являетесь участником этой комнаты"
+        )
+    
+    # Удаляем игрока из комнаты
+    db.delete(player)
+    db.commit()
+    db.refresh(room)
+    
+    # Отправляем сообщение о выходе игрока
+    async def broadcast_player_left():
+        try:
+            await manager.broadcast(
+                room_code,
+                {
+                    "type": "player_left",
+                    "player_id": player.id,
+                    "message": f"Игрок {current_user.name} покинул лобби"
+                }
+            )
+        except Exception as e:
+            print(f"Error broadcasting player left: {e}")
+    
+    background_tasks.add_task(broadcast_player_left)
+
+    if room_code in manager.active_connections and current_user.id in manager.active_connections[room_code]:
+        ws = manager.active_connections[room_code][current_user.id]
+        await ws.close(code=1000, reason="User left")
+        manager.disconnect(room_code, user_id=current_user.id)
+
+    # Если это был последний игрок, удаляем комнату
+    if len(room.players) == 0:
+        db.delete(room)
+        db.commit()
+    
+    return {"success": True, "message": "Вы успешно покинули лобби"}
+
+
+@router.post("/{room_code}/chat")
+async def send_lobby_chat_message(
+    room_code: str,
+    message_data: ChatMessageRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Отправка сообщения в чат лобби.
+    
+    Параметры:
+    - room_code: Код комнаты
+    - message_data: Данные сообщения (текст)
+    
+    Возвращает:
+    - Подтверждение отправки сообщения
+    """
+    room = db.query(Room).filter(Room.code == room_code).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    
+    # Проверяем, что пользователь находится в комнате
+    player = db.query(Player).filter(
+        Player.room_id == room.id,
+        Player.user_id == current_user.id
+    ).first()
+    
+    if not player:
+        raise HTTPException(
+            status_code=403,
+            detail="Вы не являетесь участником этой комнаты"
+        )
+    
+    chat_message = {
+        "type": "chat_message",
+        "player_id": str(player.id),
+        "player_name": current_user.name,
+        "player_role": player.role,
+        "message": message_data.message,
+        "timestamp": time.time()
+    }
+    
+    # Отправляем сообщение всем игрокам в комнате
+    async def broadcast_chat_message():
+        await manager.broadcast(room_code, chat_message)
+    
+    background_tasks.add_task(broadcast_chat_message)
+    
+    return {"success": True, "message": "Сообщение отправлено"}

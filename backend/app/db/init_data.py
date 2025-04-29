@@ -15,14 +15,16 @@ def init_data():
     try:
         # Проверяем, есть ли уже данные в таблице
         if not db.query(WordWithAssociations).first():
-            for category, words in data.items():
-                for word, associations in words.items():
-                    word_entry = WordWithAssociations(
-                        category=category,
-                        word=word,
-                        associations=associations
-                    )
-                    db.add(word_entry)
+            for category, difficulties in data.items():
+                for difficulty, words in difficulties.items():
+                    for word, associations in words.items():
+                        word_entry = WordWithAssociations(
+                            category=category,
+                            word=word,
+                            associations=associations,
+                            difficulty=difficulty
+                        )
+                        db.add(word_entry)
             db.commit()
             print("Initial data loaded successfully")
         else:

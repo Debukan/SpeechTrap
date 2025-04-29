@@ -1,7 +1,5 @@
 export const getApiBaseUrl = (): string => {
   const envUrl = process.env.REACT_APP_API_URL;
-
-  console.log('REACT_APP_API_URL:', envUrl);
   
   if (envUrl) {
     return envUrl;
