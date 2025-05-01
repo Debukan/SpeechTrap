@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../../utils/config';
-import { api } from '../../utils/api';
 import { testCorsSettings } from '../../utils/debug';
-import './Register.css';
-import { useToast } from '@chakra-ui/react';
+import { Button } from '../ui/button';
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Card } from "../ui/card";
+// Импортируем компоненты из @shadcn/ui
+// Путь может отличаться в зависимости от вашей структуры
+
+import './Register.css'; // Можно удалить или минимизировать
 
 interface RegisterProps {
     onRegister: (userData: { name: string; email: string; password: string }) => void;
@@ -18,34 +23,32 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const navigate = useNavigate();
     const apiBaseUrl = getApiBaseUrl();
-    const toast = useToast();
 
-    // Базовая валидация полей формы
+    // Валидация формы
     const validateForm = (): boolean => {
         if (name.trim().length === 0) {
             setError('Имя не может быть пустым');
             return false;
         }
-        
+
         if (email.trim().length === 0) {
             setError('Email не может быть пустым');
             return false;
         }
-        
+
         if (!email.includes('@')) {
             setError('Email должен содержать символ @');
             return false;
         }
-        
+
         if (password.length < 6) {
             setError('Пароль должен содержать минимум 6 символов');
             return false;
         }
-        
+
         return true;
     };
 
-    // Тестирование CORS при монтировании компонента
     useEffect(() => {
         if (process.env.NODE_ENV === 'development') {
             testCorsSettings()
@@ -56,104 +59,98 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError('');
-        
-        // Валидация формы перед отправкой
-        if (!validateForm()) {
-            return;
-        }
-        
+
+        if (!validateForm()) return;
+
         setIsLoading(true);
-        
+
         try {
-            console.log('Sending registration data:', { name, email, password });
-            
-            // Прямой запрос без credentials для обхода проблем с CORS
             const response = await fetch(`${apiBaseUrl}/api/users/register`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 credentials: 'omit',
                 body: JSON.stringify({ name, email, password }),
             });
-            
-            console.log('Registration response status:', response.status);
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Registration error response:', errorText);
                 throw new Error(
-                    errorText.includes('email уже существует') 
+                    errorText.includes('email уже существует')
                         ? 'Пользователь с таким email уже существует'
                         : `Ошибка при регистрации (${response.status})`
                 );
             }
-            
+
             onRegister({ name, email, password });
 
-            toast({
-                title: 'Регистрация успешна!',
-                description: 'Теперь вы можете войти в систему.',
-                status: 'success',
-                duration: 4000,
-                isClosable: true,
-                position: 'top',
-            });
+            alert('Регистрация успешна! Теперь вы можете войти в систему.');
             navigate('/login');
         } catch (error: any) {
-            console.error('Registration error:', error);
             setError(error.message || 'Произошла ошибка при регистрации');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const goToLogin = () => {
-        navigate('/login');
-    };
-
     return (
-        <div className="register-container">
-            <h2>Регистрация</h2>
-            {error && <div className="error-message">{error}</div>}
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="name">Имя:</label>
-                    <input
-                        type="text"
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </div>
-                <div>
-                    <label htmlFor="email">Email:</label>
-                    <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
-                <div>
-                    <label htmlFor="password">Пароль:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <button type="submit" disabled={isLoading}>
+        <div className="max-w-md mx-auto p-6 rounded-lg shadow-lg bg-gradient-to-br from-cyan-100 to-cyan-300">
+            <h2 className="text-center text-2xl font-semibold mb-6 text-gray-800">Регистрация</h2>
+            {error && (
+                <div className="mb-4 text-red-600 font-medium">{error}</div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+                    <Label htmlFor="name">Имя:</Label>
+
+                        <Input
+                            id="name"
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            disabled={isLoading}
+                            required
+                        />
+
+
+                    <Label htmlFor="email">Email:</Label>
+
+                        <Input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isLoading}
+                            required
+                        />
+                    <Label htmlFor="password">Пароль:</Label>
+
+                        <Input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isLoading}
+                            required
+                        />
+
+
+                <Button type="submit" disabled={isLoading} className="w-full">
                     {isLoading ? 'Загрузка...' : 'Зарегистрироваться'}
-                </button>
+                </Button>
             </form>
-            <div className="login-link">
-                <p>Уже есть аккаунт? <button onClick={goToLogin}>Войти</button></p>
+
+            <div className="mt-6 text-center">
+                <p className="text-gray-700">
+                    Уже есть аккаунт?{' '}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        className="text-white-600 hover:underline font-medium"
+                        disabled={isLoading}
+                    >
+                        Войти
+                    </button>
+                </p>
             </div>
         </div>
     );
