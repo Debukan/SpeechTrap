@@ -1,7 +1,9 @@
 import random
 from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel  # Импортируем BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import text, func
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy import select
 from app.db.deps import get_db
 from app.models.word import WordWithAssociations, DifficultyEnum
 from typing import Literal
@@ -12,14 +14,15 @@ router = APIRouter()
 # Получение случайного слова из случайной категории
 @router.get("/random-word")
 def get_random_word(difficulty: DifficultyEnum, db: Session = Depends(get_db)):
-    words = (
-        db.query(WordWithAssociations)
-        .filter(
-            WordWithAssociations.is_active == True,
-            WordWithAssociations.difficulty == difficulty,
-        )
-        .all()
-    )
+    try:
+        words = db.scalars(
+            select(WordWithAssociations).where(
+                WordWithAssociations.is_active == True,
+                WordWithAssociations.difficulty == difficulty,
+            )
+        ).all()
+    except ProgrammingError:
+        raise HTTPException(status_code=404, detail="Нет слов подходящей сложности")
 
     if not words:
         raise HTTPException(status_code=404, detail="Нет слов подходящей сложности")
@@ -39,11 +42,12 @@ def get_random_word(difficulty: DifficultyEnum, db: Session = Depends(get_db)):
 # Обновление статистики слова
 @router.post("/{word_id}/update-stats")
 def update_word_stats(word_id: int, success: bool, db: Session = Depends(get_db)):
-    word = (
-        db.query(WordWithAssociations)
-        .filter(WordWithAssociations.id == word_id)
-        .first()
-    )
+    try:
+        word = db.scalar(
+            select(WordWithAssociations).where(WordWithAssociations.id == word_id)
+        )
+    except ProgrammingError:
+        raise HTTPException(status_code=404, detail="Слово не найдено")
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
 
@@ -56,21 +60,40 @@ def update_word_stats(word_id: int, success: bool, db: Session = Depends(get_db)
     }
 
 
+# Модель для данных при создании слова
+class WordCreate(BaseModel):
+    word: str
+    category: str
+    difficulty: DifficultyEnum
+    associations: list[str]
+
+
 # Добавление нового слова
 @router.post("/")
 def add_word(
-    word: str,
-    category: str,
-    difficulty: DifficultyEnum,
-    associations: list[str],
+    word_data: WordCreate,
     db: Session = Depends(get_db),
 ):
     new_word = WordWithAssociations(
-        word=word, category=category, difficulty=difficulty, associations=associations
+        word=word_data.word,
+        category=word_data.category,
+        difficulty=word_data.difficulty,
+        associations=word_data.associations,
     )
-    db.add(new_word)
-    db.commit()
-    db.refresh(new_word)
+    try:
+        db.add(new_word)
+        db.commit()
+        db.refresh(new_word)
+    except ProgrammingError:
+        raise HTTPException(
+            status_code=500, detail="Ошибка базы данных: таблица 'words' не найдена."
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=422, detail=f"Не удалось добавить слово: {str(e)}"
+        )
+
     return {"message": "Слово добавлено", "id": new_word.id}
 
 
@@ -79,15 +102,16 @@ def add_word(
 def get_next_word(
     exclude_id: int, difficulty: DifficultyEnum, db: Session = Depends(get_db)
 ):
-    words = (
-        db.query(WordWithAssociations)
-        .filter(
-            WordWithAssociations.id != exclude_id,
-            WordWithAssociations.is_active == True,
-            WordWithAssociations.difficulty == difficulty,
-        )
-        .all()
-    )
+    try:
+        words = db.scalars(
+            select(WordWithAssociations).where(
+                WordWithAssociations.id != exclude_id,
+                WordWithAssociations.is_active == True,
+                WordWithAssociations.difficulty == difficulty,
+            )
+        ).all()
+    except ProgrammingError:
+        raise HTTPException(status_code=404, detail="Нет активных слов для выбора")
 
     if not words:
         raise HTTPException(status_code=404, detail="Нет активных слов для выбора")
@@ -103,11 +127,12 @@ def get_next_word(
 
 
 def get_word_by_id_internal(word_id: int, db: Session):
-    word = (
-        db.query(WordWithAssociations)
-        .filter(WordWithAssociations.id == word_id)
-        .first()
-    )
+    try:
+        word = db.scalar(
+            select(WordWithAssociations).where(WordWithAssociations.id == word_id)
+        )
+    except ProgrammingError:
+        raise HTTPException(status_code=404, detail="Слово не найдено")
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
     return {
@@ -128,14 +153,17 @@ def get_word_by_id(word_id: int, db: Session = Depends(get_db)):
 # Получение случайного слова по категории
 @router.get("/{category}")
 def get_word_by_category(category: str, db: Session = Depends(get_db)):
-    words = (
-        db.query(WordWithAssociations)
-        .filter(
-            WordWithAssociations.category == category,
-            WordWithAssociations.is_active == True,
+    try:
+        words = db.scalars(
+            select(WordWithAssociations).where(
+                WordWithAssociations.category == category,
+                WordWithAssociations.is_active == True,
+            )
+        ).all()
+    except ProgrammingError:
+        raise HTTPException(
+            status_code=404, detail="Категория не найдена или нет активных слов"
         )
-        .all()
-    )
     if not words:
         raise HTTPException(
             status_code=404, detail="Категория не найдена или нет активных слов"

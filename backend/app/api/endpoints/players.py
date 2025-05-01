@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from app.db.deps import get_db
 from app.models.player import Player
 from app.schemas.player import PlayerCreate, PlayerResponse
@@ -10,7 +11,7 @@ router = APIRouter()
 
 @router.post("/", response_model=PlayerResponse)
 async def create_player(player: PlayerCreate, db: Session = Depends(get_db)):
-    db_player = Player(**player.dict())
+    db_player = Player(**player.model_dump())
     db.add(db_player)
     db.commit()
     db.refresh(db_player)
@@ -29,15 +30,11 @@ def process_player_answer(
     Обновляет статистику игрока и слова.
     """
 
-    player = db.query(Player).filter(Player.id == player_id).first()
+    player = db.scalar(select(Player).where(Player.id == player_id))
     if not player:
         raise HTTPException(status_code=404, detail="Игрок не найден")
 
-    word = (
-        db.query(WordWithAssociations)
-        .filter(WordWithAssociations.id == word_id)
-        .first()
-    )
+    word = db.scalar(select(WordWithAssociations).where(WordWithAssociations.id == word_id))
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
 
