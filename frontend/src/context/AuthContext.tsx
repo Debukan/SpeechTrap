@@ -102,30 +102,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const response = await fetch(`${getApiBaseUrl()}/auth/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ currentPassword, newPassword }),
+      const result = await api.auth.updateProfile(token, {
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: newPassword
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Не удалось изменить пароль');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      // Обновляем токен, если сервер возвращает новый
-      const data = await response.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        api.setAuthToken(data.token);
-        setToken(data.token);
-      }
-
+      setUser(result.data as User);
       return Promise.resolve();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при смене пароля:', error);
       return Promise.reject(error);
     }
