@@ -14,7 +14,7 @@ axios.interceptors.request.use(
   (error) => {
     console.error('Request error in interceptor:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Добавляем интерцептор ответов для отладки
@@ -28,7 +28,7 @@ axios.interceptors.response.use(
       console.error('Error response:', error.response.status, error.response.data);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axios;

@@ -1,5 +1,5 @@
 export const getApiBaseUrl = (): string => {
-  const envUrl = process.env.REACT_APP_API_URL;
+  const envUrl = import.meta.env.VITE_API_URL;
   
   if (envUrl) {
     return envUrl;

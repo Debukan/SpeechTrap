@@ -6,13 +6,6 @@ from datetime import datetime
 from sqlalchemy import Column, JSON
 from app.models.base import Base
 
-from sqlmodel import SQLModel, Field, Relationship
-from typing import List, Optional, Literal
-from datetime import datetime
-from sqlalchemy import Column, JSON
-from app.models.base import Base
-
-
 class DifficultyEnum(str, Enum):
     basic = "basic"
     medium = "medium"

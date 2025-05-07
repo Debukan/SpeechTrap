@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     if (token) {
       api.auth.logout(token).catch(error =>
-        console.error('Ошибка при выходе:', error)
+        console.error('Ошибка при выходе:', error),
       );
     }
 
@@ -106,9 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
 
       if (!response.ok) {
@@ -138,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       isAuthenticated,
-      updatePassword
+      updatePassword,
     }}>
       {children}
     </AuthContext.Provider>

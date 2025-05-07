@@ -98,8 +98,18 @@ async def send_game_state_update(room_code: str, db: Session):
             elapsed = current_time - timer_info["start_time"]
             total_time = timer_info["duration"]
             time_left = max(0, int(total_time - elapsed))
+            if time_left < 1:
+                time_left = 0
         else:
             time_left = room.time_per_round
+            start_time = time.time()
+            room_timers[room_code] = {
+                "start_time": start_time,
+                "duration": room.time_per_round,
+                "end_time": start_time + room.time_per_round,
+            }
+    elif room.status == GameStatus.WAITING:
+        time_left = room.time_per_round
 
     # Базовое состояние игры без секретного слова
     base_state = {
@@ -131,6 +141,8 @@ async def send_game_state_update(room_code: str, db: Session):
                     associations = word_data["associations"]
             except HTTPException:
                 pass
+            except Exception as e:
+                pass
 
         personal_state = base_state.copy()
         personal_state["currentWord"] = current_word
@@ -148,19 +160,48 @@ async def start_periodic_game_state_updates(room_code: str, db: Session):
     """
     Запускает периодическую отправку состояния игры через WebSocket.
     """
+    from app.db.deps import get_db
+    
     try:
+        db.expire_all()
+        room = db.scalar(select(Room).where(Room.code == room_code))
+        if not room or room.status != GameStatus.PLAYING:
+            return
+            
         while True:
-            db.expire_all()
-            room = db.scalar(select(Room).where(Room.code == room_code))
-            if not room or room.status != GameStatus.PLAYING:
-                break
+            # Получаем новую сессию для каждой итерации
+            session_generator = get_db()
+            try:
+                session = next(session_generator)
+                
+                # Проверяем статус комнаты
+                room = session.scalar(select(Room).where(Room.code == room_code))
+                if not room or room.status != GameStatus.PLAYING:
+                    break
+                
+                # Проверяем, есть ли игроки в комнате
+                players_count = session.scalar(
+                    select(func.count(Player.id)).where(Player.room_id == room.id)
+                )
+                if not players_count or players_count < 1:
+                    break
 
-            await send_game_state_update(room_code, db)
+                try:
+                    await send_game_state_update(room_code, session)
+                except:
+                    pass
+            finally:
+                try:
+                    session.close()
+                    next(session_generator, None)
+                except Exception as e:
+                    print(f"[WEBSOCKET] Error closing DB session: {e}")
 
             # Пауза между обновлениями
             await asyncio.sleep(2)
     except Exception as e:
-        print(f"Error in periodic game state updates: {e}")
+        import traceback
+        print(traceback.format_exc())
 
 
 # Получение состояния игры
@@ -301,6 +342,17 @@ async def start_game(
             status_code=400, detail="Для начала игры нужно минимум 2 игрока"
         )
 
+    # Очищаем все таймеры для этой комнаты перед началом новой игры
+    if room_code in room_timers:
+        del room_timers[room_code]
+    
+    if room_code in timer_tasks:
+        try:
+            timer_tasks[room_code].cancel()
+        except Exception:
+            pass
+        del timer_tasks[room_code]
+
     # Сбрасываем очки текущей игры
     for player in room.players:
         player.score = 0
@@ -326,35 +378,54 @@ async def start_game(
     db.commit()
 
     # Инициализация таймера для комнаты
+    current_time = time.time()
     room_timers[room_code] = {
-        "start_time": time.time(),
+        "start_time": current_time,
         "duration": room.time_per_round,
-        "end_time": time.time() + room.time_per_round,
+        "end_time": current_time + room.time_per_round,
     }
 
-    # Запускаем фоновую задачу для отсчета времени
-    if room_code in timer_tasks:
-        timer_tasks[room_code].cancel()
-    timer_task = asyncio.create_task(
-        start_round_timer(room_code, room.time_per_round, db)
-    )
-    timer_tasks[room_code] = timer_task
+    # Отменяем предыдущий таймер, если он существует
+    if room_code in timer_tasks and timer_tasks[room_code]:
+        try:
+            timer_tasks[room_code].cancel()
+        except Exception:
+            pass
+    
+    try:
+        timer_task = asyncio.create_task(
+            start_round_timer(room_code, room.time_per_round, db, 'start_game')
+        )
+        timer_tasks[room_code] = timer_task
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
 
     # Запускаем периодические обновления состояния игры через WebSocket
-    background_tasks.add_task(start_periodic_game_state_updates, room_code, db)
+    try:
+        background_tasks.add_task(start_periodic_game_state_updates, room_code, db)
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
 
-    await manager.broadcast(
-        room_code,
-        {
-            "type": "game_started",
-            "message": "Игра началась!",
-            "redirect_to": f"/game/{room_code}",
-            "time_per_round": room.time_per_round,
-            "timer_start": time.time(),
-        },
-    )
+    try:
+        await manager.broadcast(
+            room_code,
+            {
+                "type": "game_started",
+                "message": "Игра началась!",
+                "redirect_to": f"/game/{room_code}",
+                "time_per_round": room.time_per_round,
+                "timer_start": time.time(),
+            },
+        )
+    except Exception as e:
+        pass
 
-    await send_game_state_update(room_code, db)
+    try:
+        await send_game_state_update(room_code, db)
+    except Exception as e:
+        pass
 
     return {"success": True, "message": "Игра успешно начата"}
 
@@ -367,131 +438,146 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
     Параметры:
     - room_code: Код комнаты.
     - duration: Продолжительность раунда в секундах.
-    - db: Сессия базы данных.
+    - db: Сессия базы данных (используется только для первоначальной проверки).
+    - func_name: Имя функции, вызвавшей таймер.
     """
+    from app.db.deps import get_db
+    
     try:
         # Ждем необходимое время
         await asyncio.sleep(duration)
+
+        if room_code not in timer_tasks or timer_tasks[room_code] != asyncio.current_task():
+            return  
 
         if room_code in room_timers:
             del room_timers[room_code]
         if room_code in timer_tasks:
             del timer_tasks[room_code]
 
-        room = db.scalar(select(Room).where(Room.code == room_code))
-        if not room or room.status != GameStatus.PLAYING:
-            if room_code in room_timers:
-                del room_timers[room_code]
-            if room_code in timer_tasks:
-                del timer_tasks[room_code]
-            return
+        session_generator = get_db()
+        try:
+            session = next(session_generator)
+            
+            room = session.scalar(select(Room).where(Room.code == room_code))
+            if not room or room.status != GameStatus.PLAYING:
+                if room_code in room_timers:
+                    del room_timers[room_code]
+                if room_code in timer_tasks:
+                    del timer_tasks[room_code]
+                return
 
-        # Находим текущего объясняющего игрока
-        current_player = db.scalar(
-            select(Player)
-            .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
-        )
+            # Находим текущего объясняющего игрока
+            current_player = session.scalar(
+                select(Player)
+                .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
+            )
 
-        if not current_player:
-            return
+            if not current_player:
+                return
 
-        # Меняем роль текущего игрока на угадывающего
-        current_player.role = PlayerRole.GUESSING
+            # Меняем роль текущего игрока на угадывающего
+            current_player.role = PlayerRole.GUESSING
 
-        # Находим всех игроков в комнате и сортируем их по ID
-        players = db.scalars(
-            select(Player).where(Player.room_id == room.id).order_by(Player.id)
-        ).all()
+            # Находим всех игроков в комнате и сортируем их по ID
+            players = session.scalars(
+                select(Player).where(Player.room_id == room.id).order_by(Player.id)
+            ).all()
 
-        # Находим индекс текущего игрока
-        current_index = players.index(current_player)
+            # Находим индекс текущего игрока
+            current_index = players.index(current_player)
 
-        # Определяем следующего игрока
-        next_index = (current_index + 1) % len(players)
-        next_player = players[next_index]
+            # Определяем следующего игрока
+            next_index = (current_index + 1) % len(players)
+            next_player = players[next_index]
 
-        # Назначаем следующего игрока объясняющим
-        next_player.role = PlayerRole.EXPLAINING
+            # Назначаем следующего игрока объясняющим
+            next_player.role = PlayerRole.EXPLAINING
 
-        room.current_round += 1
+            room.current_round += 1
 
-        # Если достигли максимального числа раундов, завершаем игру
-        if room.current_round > room.rounds_total:
-            room.status = GameStatus.WAITING
-            room.current_round = 0
+            # Если достигли максимального числа раундов, завершаем игру
+            if room.current_round > room.rounds_total:
+                room.status = GameStatus.WAITING
+                room.current_round = 0
 
-            for player in players:
-                if player.score_total is None:
-                    player.score_total = 0
-                player.score_total += player.score
-                player.score = 0
-                player.role = PlayerRole.WAITING
+                for player in players:
+                    if player.score_total is None:
+                        player.score_total = 0
+                    player.score_total += player.score
+                    player.score = 0
+                    player.role = PlayerRole.WAITING
 
-            winner_id = max(players, key=lambda p: p.score_total).id
-            db.commit()
+                winner_id = max(players, key=lambda p: p.score_total).id
+                session.commit()
 
-            # Отправляем сообщение о завершении игры
+                # Отправляем сообщение о завершении игры
+                await manager.broadcast(
+                    room_code,
+                    {
+                        "type": "game_finished",
+                        "message": "Игра завершена!",
+                        "winner": winner_id,
+                    },
+                )
+
+                # Удаляем таймер комнаты
+                if room_code in room_timers:
+                    del room_timers[room_code]
+                if room_code in timer_tasks:
+                    del timer_tasks[room_code]
+
+                return
+
+            # Выбираем новое слово для следующего раунда
+            if room.current_word_id:
+                word_data = get_next_word(
+                    exclude_id=room.current_word_id, difficulty=room.difficulty, db=session
+                )
+                if word_data and "id" in word_data:
+                    room.current_word_id = word_data["id"]
+
+            session.commit()
+
+            # Обновляем таймер комнаты
+            room_timers[room_code] = {
+                "start_time": time.time(),
+                "duration": room.time_per_round,
+                "end_time": time.time() + room.time_per_round,
+            }
+
+            # Отправляем всем сообщение о смене игрока и обновлении таймера
+            user = session.scalar(select(User).where(User.id == next_player.user_id))
             await manager.broadcast(
                 room_code,
                 {
-                    "type": "game_finished",
-                    "message": "Игра завершена!",
-                    "winner": winner_id,
+                    "type": "turn_changed",
+                    "message": f"Ход переходит к игроку {user.name if user else 'Неизвестный'}",
+                    "current_player": str(next_player.id),
+                    "new_timer": True,
+                    "timer_start": time.time(),
+                    "time_per_round": room.time_per_round
                 },
             )
 
-            # Удаляем таймер комнаты
-            if room_code in room_timers:
-                del room_timers[room_code]
+            # Запускаем новый таймер для следующего раунда
             if room_code in timer_tasks:
-                del timer_tasks[room_code]
-
-            return
-
-        # Выбираем новое слово для следующего раунда
-        if room.current_word_id:
-            word_data = get_next_word(
-                exclude_id=room.current_word_id, difficulty=room.difficulty, db=db
+                timer_tasks[room_code].cancel()
+            timer_task = asyncio.create_task(
+                start_round_timer(room_code, room.time_per_round, session)
             )
-            if word_data and "id" in word_data:
-                room.current_word_id = word_data["id"]
+            timer_tasks[room_code] = timer_task
 
-        db.commit()
-
-        # Обновляем таймер комнаты
-        room_timers[room_code] = {
-            "start_time": time.time(),
-            "duration": room.time_per_round,
-            "end_time": time.time() + room.time_per_round,
-        }
-
-        # Отправляем всем сообщение о смене игрока и обновлении таймера
-        user = db.scalar(select(User).where(User.id == next_player.user_id))
-        await manager.broadcast(
-            room_code,
-            {
-                "type": "turn_changed",
-                "message": f"Ход переходит к игроку {user.name if user else 'Неизвестный'}",
-                "current_player": str(next_player.id),
-                "new_timer": True,
-                "timer_start": time.time(),
-                "time_per_round": room.time_per_round,
-            },
-        )
-
-        # Запускаем новый таймер для следующего раунда
-        if room_code in timer_tasks:
-            timer_tasks[room_code].cancel()
-        timer_task = asyncio.create_task(
-            start_round_timer(room_code, room.time_per_round, db)
-        )
-        timer_tasks[room_code] = timer_task
-
-        await send_game_state_update(room_code, db)
+            await send_game_state_update(room_code, session)
+        finally:
+            try:
+                session.close()
+                next(session_generator, None)
+            except Exception:
+                pass
     except asyncio.CancelledError:
-        print(f"Timer for room {room_code} was cancelled")
+        pass
     except Exception as e:
-        print(f"Error in timer for room {room_code}: {e}")
         if room_code in room_timers:
             del room_timers[room_code]
         if room_code in timer_tasks:

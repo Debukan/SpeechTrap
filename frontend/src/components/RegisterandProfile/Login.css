@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+.login-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e0f7fa, #80deea);/* Градиентный фон */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}/* Тень для глубины */
+body {
+    background: linear-gradient(135deg, #e0f7fa, #80deea); /* Градиентный фон от персикового к лавандовому */
+    margin: 0;
+    height: 100vh;
+}
+button {
+    width: 100%; /* Кнопки занимают всю ширину контейнера */
+    padding: 10px;
+    border: none;
+    border-radius: 4px; /* Закругляем углы */
+    background-color: #90caf9; /* Цвет фона кнопок */
+    color: white;
+    cursor: pointer;
+    margin-top: 5px;
+    font-size: 16px; /* Увеличиваем размер шрифта */
+    transition: background 0.3s ease, transform 0.2s ease; /* Плавные переходы */
+}
+
+button:hover {
+    background: linear-gradient(90deg, #0056b3, #004494); /* Темнее при наведении */
+    transform: translateY(-2px); /* Легкий подъем кнопки при наведении */
+}
+button[disabled] {
+    background-color: #ccc; /* Цвет кнопки при загрузке */
+}
+h2 {
+    text-align: center; /* Центрируем заголовок */
+    margin-bottom: 20px; /* Отступ снизу заголовка */
+}
+
+form div {
+    margin-bottom: 15px; /* Отступ между элементами формы */
+}
+
+label {
+    display: block; /* Блочный элемент для меток */
+    margin-bottom: 5px; /* Отступ снизу метки */
+    font-weight: bold; /* Жирный шрифт для меток */
+}
+
+input {
+    width: 100%; /* Поля ввода занимают всю ширину контейнера */
+    padding: 10px; /* Отступы внутри полей ввода */
+    border: 1px solid #ccc; /* Светлая рамка для полей ввода */
+    border-radius: 6px; /* Закругляем углы полей ввода */
+    box-sizing: border-box; /* Учитываем отступы и границы в ширине элемента */
+    font-size: 14px; /* Размер шрифта в полях ввода */
+    font-family: inherit; /* Наследуем шрифт от родителя */
+}
+
+input:focus {
+    border-color: #007bff; /* Цвет рамки при фокусе на поле ввода */
+    outline: none; /* Убираем стандартный контур при фокусе */
+}
+
+
+
+.error-message {
+    color: red;
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: #ffeeee;
+    border: 1px solid #ffcccc;
+    border-radius: 4px;
+}

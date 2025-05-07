@@ -2,7 +2,7 @@
  * Проверяет доступность API с разными настройками CORS для отладки
  */
 export async function testCorsSettings() {
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8001';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
   
   console.log('Testing CORS settings with various credentials options...');
   
@@ -10,7 +10,7 @@ export async function testCorsSettings() {
   try {
     const resp1 = await fetch(`${apiUrl}/health`, { 
       credentials: 'omit',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
     });
     console.log('Test 1 (credentials: omit):', resp1.status, resp1.ok);
   } catch (e) {
@@ -21,7 +21,7 @@ export async function testCorsSettings() {
   try {
     const resp2 = await fetch(`${apiUrl}/health`, { 
       credentials: 'same-origin',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
     });
     console.log('Test 2 (credentials: same-origin):', resp2.status, resp2.ok);
   } catch (e) {
@@ -32,7 +32,7 @@ export async function testCorsSettings() {
   try {
     const resp3 = await fetch(`${apiUrl}/health`, { 
       credentials: 'include',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
     });
     console.log('Test 3 (credentials: include):', resp3.status, resp3.ok);
   } catch (e) {
