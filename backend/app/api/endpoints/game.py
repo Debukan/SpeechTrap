@@ -394,7 +394,7 @@ async def start_game(
     
     try:
         timer_task = asyncio.create_task(
-            start_round_timer(room_code, room.time_per_round, db, 'start_game')
+            start_round_timer(room_code, room.time_per_round, db)
         )
         timer_tasks[room_code] = timer_task
     except Exception as e:
@@ -439,7 +439,6 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
     - room_code: Код комнаты.
     - duration: Продолжительность раунда в секундах.
     - db: Сессия базы данных (используется только для первоначальной проверки).
-    - func_name: Имя функции, вызвавшей таймер.
     """
     from app.db.deps import get_db
     
@@ -448,23 +447,39 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
         await asyncio.sleep(duration)
 
         if room_code not in timer_tasks or timer_tasks[room_code] != asyncio.current_task():
+            if room_code in room_timers:
+                del room_timers[room_code]
+            if room_code in timer_tasks:
+                del timer_tasks[room_code]
             return  
 
+        # Очищаем информацию о таймере
         if room_code in room_timers:
             del room_timers[room_code]
         if room_code in timer_tasks:
             del timer_tasks[room_code]
 
-        session_generator = get_db()
+        use_existing_db = False
+        session = None
         try:
-            session = next(session_generator)
+            if db and db.is_active:
+                room = db.scalar(select(Room).where(Room.code == room_code))
+                if room:
+                    use_existing_db = True
+                    session = db
+        except Exception:
+            pass
             
+        if not use_existing_db:
+            session_generator = get_db()
+            try:
+                session = next(session_generator)
+            except Exception:
+                return
+            
+        try:
             room = session.scalar(select(Room).where(Room.code == room_code))
             if not room or room.status != GameStatus.PLAYING:
-                if room_code in room_timers:
-                    del room_timers[room_code]
-                if room_code in timer_tasks:
-                    del timer_tasks[room_code]
                 return
 
             # Находим текущего объясняющего игрока
@@ -521,12 +536,6 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
                     },
                 )
 
-                # Удаляем таймер комнаты
-                if room_code in room_timers:
-                    del room_timers[room_code]
-                if room_code in timer_tasks:
-                    del timer_tasks[room_code]
-
                 return
 
             # Выбираем новое слово для следующего раунда
@@ -570,13 +579,17 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
 
             await send_game_state_update(room_code, session)
         finally:
-            try:
-                session.close()
-                next(session_generator, None)
-            except Exception:
-                pass
+            if not use_existing_db and session:
+                try:
+                    session.close()
+                    next(session_generator, None)
+                except Exception:
+                    pass
     except asyncio.CancelledError:
-        pass
+        if room_code in room_timers:
+            del room_timers[room_code]
+        if room_code in timer_tasks:
+            del timer_tasks[room_code]
     except Exception as e:
         if room_code in room_timers:
             del room_timers[room_code]
