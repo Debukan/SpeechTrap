@@ -436,9 +436,11 @@ async def test_send_game_state_update_playing(
 @patch("app.api.endpoints.game.get_next_word")
 @patch("app.api.endpoints.game.send_game_state_update", new_callable=AsyncMock)
 @patch("app.api.endpoints.game.asyncio.create_task")
+@patch("app.api.endpoints.game.asyncio.current_task")
 @patch("app.api.endpoints.game.time.time")
 async def test_start_round_timer_next_round(
     mock_time,
+    mock_current_task,
     mock_create_task,
     mock_send_state,
     mock_get_next_word,
@@ -470,6 +472,8 @@ async def test_start_round_timer_next_round(
     }
     mock_timer_task = MagicMock()
     game_module.timer_tasks[room.code] = mock_timer_task
+    mock_current_task.return_value = mock_timer_task
+
     mock_next_word_data = {"id": word.id + 1, "word": "NextWord", "associations": []}
 
     next_word_db = WordWithAssociations(
@@ -504,9 +508,9 @@ async def test_start_round_timer_next_round(
     mock_create_task.assert_called_once()
 
     mock_broadcast.assert_called_once()
-    broadcast_args = mock_broadcast.call_args[0]
-    assert broadcast_args[0] == room.code
-    broadcast_data = broadcast_args[1]
+    broadcast_call_args = mock_broadcast.call_args[0]
+    assert broadcast_call_args[0] == room.code
+    broadcast_data = broadcast_call_args[1]
     assert broadcast_data["type"] == "turn_changed"
     assert broadcast_data["current_player"] == str(players[1].id)
     assert broadcast_data["message"].startswith("Ход переходит к игроку")
@@ -523,9 +527,15 @@ async def test_start_round_timer_next_round(
 @patch("app.api.endpoints.game.asyncio.sleep", new_callable=AsyncMock)
 @patch("app.api.endpoints.game.manager.broadcast", new_callable=AsyncMock)
 @patch("app.api.endpoints.game.send_game_state_update", new_callable=AsyncMock)
+@patch("app.api.endpoints.game.asyncio.current_task")
 @patch("app.api.endpoints.game.time.time")
 async def test_start_round_timer_game_finish(
-    mock_time, mock_send_state, mock_broadcast, mock_sleep, setup_users_rooms
+    mock_time,
+    mock_current_task,
+    mock_send_state,
+    mock_broadcast,
+    mock_sleep,
+    setup_users_rooms
 ):
     """Тест завершения игры по таймеру в последнем раунде."""
     db = setup_users_rooms["db"]
@@ -552,6 +562,7 @@ async def test_start_round_timer_game_finish(
     }
     mock_timer_task = MagicMock()
     game_module.timer_tasks[room.code] = mock_timer_task
+    mock_current_task.return_value = mock_timer_task
 
     await start_round_timer(room.code, duration, db)
 
@@ -573,9 +584,9 @@ async def test_start_round_timer_game_finish(
     assert room.code not in game_module.timer_tasks
 
     mock_broadcast.assert_called_once()
-    broadcast_args = mock_broadcast.call_args[0]
-    assert broadcast_args[0] == room.code
-    broadcast_data = broadcast_args[1]
+    broadcast_call_args = mock_broadcast.call_args[0]
+    assert broadcast_call_args[0] == room.code
+    broadcast_data = broadcast_call_args[1]
     assert broadcast_data["type"] == "game_finished"
     assert broadcast_data["message"] == "Игра завершена!"
     assert (
@@ -583,6 +594,11 @@ async def test_start_round_timer_game_finish(
         or broadcast_data["winner"] == players[1].id
     )
     mock_send_state.assert_not_called()
+
+    if room.code in game_module.room_timers:
+        del game_module.room_timers[room.code]
+    if room.code in game_module.timer_tasks:
+        del game_module.timer_tasks[room.code]
 
 
 @pytest.mark.asyncio
