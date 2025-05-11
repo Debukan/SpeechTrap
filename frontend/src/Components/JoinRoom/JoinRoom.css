@@ -1,11 +1,19 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0f7fa, #80deea);
+  font-family: 'Arial', sans-serif;
+}
+
 .join-room-container {
   max-width: 500px;
   margin: 2rem auto;
   padding: 25px;
-  background: linear-gradient(135deg, #ffeb3b, #8bc34a);
+  background: linear-gradient(135deg, #e0f7fa, #80deea);
   border-radius: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  font-family: 'Arial', sans-serif;
+  color: #222;
+  animation: fadeIn 0.5s ease-out;
 }
 
 h2 {
@@ -37,6 +45,7 @@ input {
   text-align: left;
   font-family: inherit;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 input[type="text"]#roomCode {
@@ -70,33 +79,33 @@ input:focus {
 }
 
 .join-button {
-  background-color: #222;
+  background-color: #90caf9;
 }
 
 .join-button:hover {
-  background-color: #000;
+  background-color: #0d47a1;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .create-button {
-  background-color: #333;
+  background-color: #64b5f6;
 }
 
 .create-button:hover {
-  background-color: #222;
+  background-color: #1565c0;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .back-button {
-  background-color: #555;
+  background-color: #42a5f5;
 }
 
 .back-button:hover {
-  background-color: #444;
+  background-color: #1e88e5;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 button:disabled {
@@ -146,8 +155,4 @@ button:disabled {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.join-room-container {
-  animation: fadeIn 0.5s ease-out;
 }
