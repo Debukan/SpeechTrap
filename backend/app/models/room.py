@@ -38,9 +38,7 @@ class Room(SQLModel, table=True):
 
     players: List["Player"] = Relationship(back_populates="room")
     current_word_id: Optional[int] = Field(
-        default=None, 
-        foreign_key="words.id",
-        nullable=True
+        default=None, foreign_key="words.id", nullable=True
     )
 
     def is_full(self) -> bool:

@@ -46,8 +46,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         bool: True если пароль верный
     """
     return bcrypt.checkpw(
-        plain_password.encode('utf-8'),
-        hashed_password.encode('utf-8')
+        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
     )
 
 
@@ -60,10 +59,7 @@ def get_password_hash(password: str) -> str:
         str: Хеш пароля
     """
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(
-        password.encode('utf-8'),
-        salt
-    ).decode('utf-8')
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -122,7 +118,9 @@ def is_token_valid(token: str) -> bool:
     return token not in blacklisted_tokens
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     """
     Получает текущего пользователя по JWT токену.
 
@@ -172,10 +170,10 @@ def get_user_from_db(email: str, db: Session):
 
     statement = select(User).where(User.email == email)
     result = db.execute(statement).first()
-    
+
     if result is None:
         return None
-    
+
     user = result[0]
-    
+
     return user

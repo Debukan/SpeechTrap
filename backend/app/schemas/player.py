@@ -28,9 +28,7 @@ class PlayerResponse(BaseModel):
     wrong_answers: int = 0
     success_rate: float = 0.0
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlayerDetailResponse(PlayerResponse):
@@ -40,9 +38,7 @@ class PlayerDetailResponse(PlayerResponse):
     joined_at: datetime
     success_rate: float
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlayerAnswerRequest(BaseModel):

@@ -1,6 +1,7 @@
 from app.core.config import settings
 import os
 
+
 def test_settings_load():
     """
     Тест проверяет, что основные настройки загружаются.

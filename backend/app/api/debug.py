@@ -9,17 +9,21 @@ from sqlmodel import select
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
 @router.get("/routes")
 async def list_routes(request: Request):
     """Отображает список всех маршрутов API"""
     routes = []
     for route in request.app.routes:
-        routes.append({
-            "path": route.path,
-            "name": route.name,
-            "methods": getattr(route, "methods", None)
-        })
+        routes.append(
+            {
+                "path": route.path,
+                "name": route.name,
+                "methods": getattr(route, "methods", None),
+            }
+        )
     return {"routes": routes}
+
 
 @router.get("/users")
 async def list_users(db: Session = Depends(get_db)):
@@ -28,10 +32,10 @@ async def list_users(db: Session = Depends(get_db)):
         statement = select(User)
         results = db.execute(statement).all()
         users = [row[0] for row in results]
-        
+
         return {
             "users": [
-                {"id": user.id, "name": user.name, "email": user.email} 
+                {"id": user.id, "name": user.name, "email": user.email}
                 for user in users
             ]
         }
@@ -39,8 +43,11 @@ async def list_users(db: Session = Depends(get_db)):
         logger.exception("Error listing users")
         return {"error": str(e)}
 
+
 @router.post("/create-user")
-async def create_test_user(name: str, email: str, password: str, db: Session = Depends(get_db)):
+async def create_test_user(
+    name: str, email: str, password: str, db: Session = Depends(get_db)
+):
     """Создает тестового пользователя (только для отладки)"""
     try:
         user = User(name=name, email=email)

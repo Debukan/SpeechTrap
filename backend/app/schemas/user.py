@@ -21,9 +21,9 @@ class UserCreate(UserBase):
             "example": {
                 "name": "Иван Иванов",
                 "email": "ivan@example.com",
-                "password": "секретный_пароль"
+                "password": "секретный_пароль",
             }
-        }
+        },
     )
 
 
@@ -34,9 +34,7 @@ class UserResponse(UserBase):
     created_at: datetime
     is_active: bool
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserLogin(BaseModel):
@@ -74,7 +72,9 @@ class UserUpdate(BaseModel):
 
         if new_password or confirm_password:
             if not new_password or not confirm_password:
-                raise ValueError("Оба поля new_password и confirm_password должны быть заполнены")
+                raise ValueError(
+                    "Оба поля new_password и confirm_password должны быть заполнены"
+                )
 
             if new_password.strip() == "" or confirm_password.strip() == "":
                 raise ValueError("Пароли не могут быть пустыми строками")

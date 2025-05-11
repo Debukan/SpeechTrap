@@ -53,7 +53,9 @@ class Player(SQLModel, table=True):
             return 0.0
         return (self.correct_answers / total) * 100
 
-    def check_answer(self, word: WordWithAssociations, guessed_association: str) -> bool:
+    def check_answer(
+        self, word: WordWithAssociations, guessed_association: str
+    ) -> bool:
         """
         Проверяет, является ли ответ игрока правильным.
 

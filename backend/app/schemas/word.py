@@ -10,6 +10,7 @@ class WordBase(BaseModel):
     associations: List[str]
     difficulty: DifficultyEnum
 
+
 # class WordCreate(WordBase):
 #     room_id: int
 
@@ -20,6 +21,4 @@ class WordResponse(WordBase):
     times_used: int
     success_rate: float
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)

@@ -42,10 +42,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - CHOKIDAR_USERPOLLING=true
-      - WDS_SOCKET_PORT=0
-      - REACT_APP_API_URL=http://localhost:8001
-    command: npm start
+      - VITE_API_URL=http://localhost:8001
+    command: npm run dev
     depends_on:
       - backend
     networks:

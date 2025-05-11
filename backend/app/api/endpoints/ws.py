@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 # Создаем роутер для WebSocket
 router = APIRouter()
 
+
 # Менеджер подключений WebSocket
 class ConnectionManager:
     def __init__(self):
@@ -20,14 +21,16 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket, room_code: str, user_id: int = None):
         # Принимаем подключение
-        logger.info(f"Attempting to accept WebSocket connection for room {room_code}, user_id: {user_id}")
+        logger.info(
+            f"Attempting to accept WebSocket connection for room {room_code}, user_id: {user_id}"
+        )
         await websocket.accept()
         logger.info(f"Connection accepted for room {room_code}")
 
         # Добавляем подключение в словарь
         if room_code not in self.active_connections:
             self.active_connections[room_code] = {}
-        
+
         if user_id:
             self.active_connections[room_code][user_id] = websocket
             logger.info(f"User {user_id} connected to room {room_code}")
@@ -35,7 +38,9 @@ class ConnectionManager:
             self.active_connections[room_code][websocket] = websocket
             logger.info(f"Anonymous client connected to room {room_code}")
 
-    def disconnect(self, room_code: str, user_id: int = None, websocket: WebSocket = None):
+    def disconnect(
+        self, room_code: str, user_id: int = None, websocket: WebSocket = None
+    ):
         # Удаляем подключение из словаря
         if room_code in self.active_connections:
             if user_id is not None and user_id in self.active_connections[room_code]:
@@ -44,7 +49,7 @@ class ConnectionManager:
             elif websocket and websocket in self.active_connections[room_code]:
                 del self.active_connections[room_code][websocket]
                 logger.info(f"Anonymous client disconnected from room {room_code}")
-            
+
             # Если комната пуста, удаляем её
             if not self.active_connections[room_code]:
                 del self.active_connections[room_code]
@@ -52,41 +57,57 @@ class ConnectionManager:
     def serialize_datetime(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
-        raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+        raise TypeError(
+            f"Object of type {obj.__class__.__name__} is not JSON serializable"
+        )
 
-    async def broadcast(self, room_code: str, message: dict, exclude_user_id: int = None, exclude_websocket: WebSocket = None):
+    async def broadcast(
+        self,
+        room_code: str,
+        message: dict,
+        exclude_user_id: int = None,
+        exclude_websocket: WebSocket = None,
+    ):
         # Рассылка сообщений всем участникам комнаты, кроме указанного пользователя
         if room_code in self.active_connections:
             clients_count = len(self.active_connections[room_code])
-            logger.info(f"Broadcasting message to {clients_count} clients in room {room_code}: {message.get('type', 'unknown')}")
-            
+            logger.info(
+                f"Broadcasting message to {clients_count} clients in room {room_code}: {message.get('type', 'unknown')}"
+            )
+
             success_count = 0
-            for client_id, websocket in self.active_connections[room_code].items():
+            for client_id, websocket in list(self.active_connections[room_code].items()):
                 if client_id != exclude_user_id and websocket != exclude_websocket:
                     try:
                         if isinstance(message, dict):
-                            json_str = json.dumps(message, default=self.serialize_datetime)
+                            json_str = json.dumps(
+                                message, default=self.serialize_datetime
+                            )
                             await websocket.send_text(json_str)
                             success_count += 1
                         else:
                             await websocket.send_text(message)
                             success_count += 1
                     except Exception as e:
-                        logger.error(f"Error sending message to client {client_id}: {e}")
-            
-            logger.info(f"Successfully sent message to {success_count} out of {clients_count} clients")
+                        logger.error(
+                            f"Error sending message to client {client_id}: {e}"
+                        )
+
+            logger.info(
+                f"Successfully sent message to {success_count} out of {clients_count} clients"
+            )
 
     async def send_personal_message(self, user_id: str, message: dict):
         """
         Отправляет личное сообщение конкретному пользователю
-        
+
         Параметры:
         - user_id: ID пользователя, которому нужно отправить сообщение
         - message: Сообщение для отправки
         """
         # Найти все соединения данного пользователя
         user_id_int = int(user_id) if user_id.isdigit() else user_id
-        
+
         for room_code in self.active_connections:
             for connection_id, websocket in self.active_connections[room_code].items():
                 if connection_id == user_id_int:
@@ -95,14 +116,20 @@ class ConnectionManager:
                         await websocket.send_text(json_str)
                         logger.info(f"Personal message sent to user {user_id}")
                     except Exception as e:
-                        logger.error(f"Error sending personal message to user {user_id}: {e}")
+                        logger.error(
+                            f"Error sending personal message to user {user_id}: {e}"
+                        )
+
 
 # Инициализация менеджера подключений
 manager = ConnectionManager()
 
+
 # WebSocket endpoint для подключения к комнате
 @router.websocket("/ws/{room_code}/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int, db: Session = Depends(get_db)):
+async def websocket_endpoint(
+    websocket: WebSocket, room_code: str, user_id: int, db: Session = Depends(get_db)
+):
     """
     WebSocket-подключение для взаимодействия с игровой комнатой для авторизованного пользователя.
 
@@ -133,7 +160,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int,
     try:
         from app.schemas.room import RoomResponse
         from app.schemas.player import PlayerResponse
-        
+
         room_data = RoomResponse(
             id=room.id,
             code=room.code,
@@ -143,34 +170,49 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int,
             time_per_round=room.time_per_round,
             current_round=room.current_round,
             created_at=room.created_at,
-            player_count=len(room.players) if hasattr(room, "players") and room.players else 0,
-            current_word_id=room.current_word_id if hasattr(room, "current_word_id") else None,
+            player_count=(
+                len(room.players) if hasattr(room, "players") and room.players else 0
+            ),
+            current_word_id=(
+                room.current_word_id if hasattr(room, "current_word_id") else None
+            ),
             is_full=room.is_full(),
-            players=[
-                PlayerResponse(
-                    id=player.id,
-                    name=player.user.name if hasattr(player, "user") and player.user else f"Player {player.id}"
-                )
-                for player in room.players
-            ] if hasattr(room, "players") and room.players else []
+            players=(
+                [
+                    PlayerResponse(
+                        id=player.id,
+                        name=(
+                            player.user.name
+                            if hasattr(player, "user") and player.user
+                            else f"Player {player.id}"
+                        ),
+                    )
+                    for player in room.players
+                ]
+                if hasattr(room, "players") and room.players
+                else []
+            ),
         )
-        
+
         room_dict = room_data.dict()
-        json_data = json.dumps({
-            "type": "room_update",
-            "room": room_dict
-        }, default=manager.serialize_datetime)
-        
+        json_data = json.dumps(
+            {"type": "room_update", "room": room_dict},
+            default=manager.serialize_datetime,
+        )
+
         await websocket.send_text(json_data)
-        
+
         # Отправляем запрос на обновление состояния игры для этого игрока
         from app.api.endpoints.game import send_game_state_update
+
         await send_game_state_update(room_code, db)
-        
+
         # Ожидание сообщений от клиента
         while True:
             data = await websocket.receive_text()
-            logger.info(f"Received message from user {user_id} in room {room_code}: {data}")
+            logger.info(
+                f"Received message from user {user_id} in room {room_code}: {data}"
+            )
             message = json.loads(data)
 
             # Обработка сообщения
@@ -179,14 +221,18 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int,
                 await manager.broadcast(
                     room_code,
                     {"type": "chat", "user_id": user_id, "message": message["message"]},
-                    exclude_user_id=user_id
+                    exclude_user_id=user_id,
                 )
             elif message["type"] == "game_action":
                 # Рассылка игрового действие всем участникам комнаты
                 await manager.broadcast(
                     room_code,
-                    {"type": "game_action", "user_id": user_id, "action": message["action"]},
-                    exclude_user_id=user_id
+                    {
+                        "type": "game_action",
+                        "user_id": user_id,
+                        "action": message["action"],
+                    },
+                    exclude_user_id=user_id,
                 )
 
     except WebSocketDisconnect:
@@ -194,7 +240,9 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, user_id: int,
         # Обработка отключения пользователя
         manager.disconnect(room_code, user_id)
     except Exception as e:
-        logger.exception(f"Error in websocket_endpoint for room {room_code}, user_id {user_id}: {str(e)}")
+        logger.exception(
+            f"Error in websocket_endpoint for room {room_code}, user_id {user_id}: {str(e)}"
+        )
         try:
             await websocket.close(code=1011, reason=f"Internal error: {str(e)}")
         except:

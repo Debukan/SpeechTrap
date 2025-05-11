@@ -17,6 +17,7 @@ class RoomCreate(RoomBase):
     code: str  # Код комнаты, заданный пользователем
     status: GameStatus = GameStatus.WAITING  # Статус комнаты по умолчанию
 
+
 class RoomResponse(RoomBase):
     id: int
     code: str
@@ -28,9 +29,9 @@ class RoomResponse(RoomBase):
     current_word_id: Optional[int] = None
     is_full: bool
     players: List[PlayerResponse]
-    
+
     # Cериализатор для datetime
-    @field_serializer('created_at', when_used="json")
+    @field_serializer("created_at", when_used="json")
     def serialize_dt(self, dt: datetime):
         return dt.isoformat()
 
