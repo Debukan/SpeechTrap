@@ -15,16 +15,21 @@ from app.models.room import Room
 import jwt
 import os
 
-os.makedirs("/var/log/app", exist_ok=True)
 
-# Настройка логирования
+log_file_path = os.environ.get("BACKEND_LOG_FILE")
+handlers = []
+if log_file_path:
+    log_dir = os.path.dirname(log_file_path)
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        handlers.append(logging.FileHandler(log_file_path))
+    except Exception:
+        pass
+handlers.append(logging.StreamHandler())
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('/var/log/app/backend.log'),
-        logging.StreamHandler()
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger("app")
 
