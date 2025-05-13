@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from '../../utils/axios-config';
 import { ChatMessage } from '../../types/chat';
 import './ChatBox.css';
 
@@ -10,7 +9,7 @@ interface ChatBoxProps {
   onSendMessage: (message: string) => void;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ roomCode, isExplaining, messages, onSendMessage }) => {
+const ChatBox: React.FC<ChatBoxProps> = ({ isExplaining, messages, onSendMessage }) => {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);

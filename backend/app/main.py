@@ -15,7 +15,14 @@ from app.models.room import Room
 import jwt
 
 # Настройка логирования
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/var/log/app/backend.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger("app")
 
 # Импортируем роутеры
@@ -85,9 +92,9 @@ app.include_router(
 app.include_router(
     words.router, prefix="/api/words", tags=["words"]
 )  # Роутер для работы со словами
-app.include_router(
-    debug_router, prefix="/api/debug", tags=["debug"]
-)  # Роутер для отладки
+# app.include_router(
+#     debug_router, prefix="/api/debug", tags=["debug"]
+# )  # Роутер для отладки
 app.include_router(ws.router, prefix="/api", tags=["websocket"])  # Роутер для WebSocket
 app.include_router(game.router, prefix="/api/game", tags=["game"])  # Роутер для игры
 

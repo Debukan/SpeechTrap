@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import { isDev } from '../../utils/config';
 import apiClient, { gameApi } from '../../api/apiClient';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserContext } from '../../context/UserContext';
@@ -54,7 +55,7 @@ const GameBoard: React.FC = () => {
   const gameWords = [
     'Табу', 'Слово', 'Ассоциация', 'Описание', 'Загадка', 
     'Угадай', 'Синоним', 'Команда', 'Фраза', 'Общение',
-    'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка'
+    'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка',
   ];
 
   // Устанавливаем isComponentMounted в false при размонтировании компонента
@@ -79,26 +80,34 @@ const GameBoard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log('User context in GameBoard:', user);
+    if (isDev()) {
+      console.log('User context in GameBoard:', user);
+    }
   }, [user]);
 
   useEffect(() => {
     // Проверяем наличие пользователя в контексте
     if (!user) {
-      console.log('Пользователь не найден в контексте, пытаемся восстановить из localStorage');
-      
+      if (isDev()) {
+        console.log('Пользователь не найден в контексте, пытаемся восстановить из localStorage');
+      }
       try {
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
           const parsedUser = JSON.parse(savedUser);
-          console.log('Восстановлен пользователь из localStorage:', parsedUser);
-          
+          if (isDev()) {
+            console.log('Восстановлен пользователь из localStorage:', parsedUser);
+          }
           setUser(parsedUser);
         } else {
-          console.log('Пользователь не найден в localStorage');
+          if (isDev()) {
+            console.log('Пользователь не найден в localStorage');
+          }
         }
       } catch (error) {
-        console.error('Ошибка при восстановлении пользователя:', error);
+        if (isDev()) {
+          console.error('Ошибка при восстановлении пользователя:', error);
+        }
       }
     }
   }, [user, setUser]);
@@ -139,13 +148,17 @@ const GameBoard: React.FC = () => {
         setTimePerRound(roundTime);
         const startTime = Date.now() / 1000 - (roundTime - data.timeLeft);
         setTimerStartTime(startTime);
-        console.log(`Timer initialized: timeLeft=${data.timeLeft}, roundTime=${roundTime}, startTime=${startTime}`);
+        if (isDev()) {
+          console.log(`Timer initialized: timeLeft=${data.timeLeft}, roundTime=${roundTime}, startTime=${startTime}`);
+        }
       }
 
       setError(null);
       setInitialLoadComplete(true);
     } catch (error) {
-      console.error('Error fetching game state:', error);
+      if (isDev()) {
+        console.error('Error fetching game state:', error);
+      }
       if (isComponentMounted.current) {
         setError('Не удалось загрузить состояние игры');
       }
@@ -160,29 +173,37 @@ const GameBoard: React.FC = () => {
   const connectWebSocket = useCallback(() => {
     // Проверяем что компонент все еще смонтирован
     if (!isComponentMounted.current) {
-      console.log('Компонент размонтирован, WebSocket соединение не создается');
+      if (isDev()) {
+        console.log('Компонент размонтирован, WebSocket соединение не создается');
+      }
       return;
     }
     
     // Проверяем, что еще не создаем соединение и предыдущее не активно
     if (isConnecting.current) {
-      console.log('Соединение уже в процессе создания, пропускаем');
+      if (isDev()) {
+        console.log('Соединение уже в процессе создания, пропускаем');
+      }
       return;
     }
     
     if (wsRef.current && 
         (wsRef.current.readyState === WebSocket.CONNECTING || 
          wsRef.current.readyState === WebSocket.OPEN)) {
-      console.log('Уже есть активное подключение WebSocket');
+      if (isDev()) {
+        console.log('Уже есть активное подключение WebSocket');
+      }
       return;
     }
 
-    console.log('Попытка подключения WebSocket с параметрами:', { 
-      userExists: Boolean(user), 
-      userId: user?.id, 
-      roomCode,
-      wsBaseUrl, 
-    });
+    if (isDev()) {
+      console.log('Попытка подключения WebSocket с параметрами:', { 
+        userExists: Boolean(user), 
+        userId: user?.id, 
+        roomCode,
+        wsBaseUrl, 
+      });
+    }
 
     if (!user || !roomCode) return;
 
@@ -190,11 +211,15 @@ const GameBoard: React.FC = () => {
 
     // Закрываем предыдущее соединение, если оно существует
     if (wsRef.current) {
-      console.log('Закрытие предыдущего WebSocket соединения');
+      if (isDev()) {
+        console.log('Закрытие предыдущего WebSocket соединения');
+      }
       try {
         wsRef.current.close(1000, 'Новое соединение создается');
       } catch (e) {
-        console.warn('Ошибка при закрытии предыдущего соединения:', e);
+        if (isDev()) {
+          console.warn('Ошибка при закрытии предыдущего соединения:', e);
+        }
       }
       wsRef.current = null;
     }
@@ -204,7 +229,9 @@ const GameBoard: React.FC = () => {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log(`WebSocket connection opened to game ${roomCode}`);
+        if (isDev()) {
+          console.log(`WebSocket connection opened to game ${roomCode}`);
+        }
         isConnecting.current = false;
         fetchGameState();
       };
@@ -216,10 +243,14 @@ const GameBoard: React.FC = () => {
           if (!isComponentMounted.current) return;
 
           if (data.type === 'chat_message') {
-            console.log('Получено сообщение чата:', data);
+            if (isDev()) {
+              console.log('Получено сообщение чата:', data);
+            }
             setChatMessages(prev => [...prev, data]);
           } else if (data.type === 'game_state_update') {
-            console.log('Получено обновление состояния игры:', data.game_state);
+            if (isDev()) {
+              console.log('Получено обновление состояния игры:', data.game_state);
+            }
             setGameState(prevState => {
               if (!prevState) return data.game_state;
 
@@ -244,7 +275,9 @@ const GameBoard: React.FC = () => {
             }
           } else if (data.type === 'turn_changed') {
             fetchGameState();
-            console.log(data)
+            if (isDev()) {
+              console.log(data);
+            }
 
             // Обновляем таймер если получен новый
             if (data.new_timer) {
@@ -256,7 +289,9 @@ const GameBoard: React.FC = () => {
             toast.info('Игра завершена!');
             navigate(`/room/${roomCode}`);
           } else if (data.type === 'game_started') {
-            console.log('Получено сообщение о начале игры в игровом режиме');
+            if (isDev()) {
+              console.log('Получено сообщение о начале игры в игровом режиме');
+            }
             fetchGameState();
             if (data.timer_start && data.time_per_round) {
               setTimerStartTime(data.timer_start);
@@ -277,22 +312,27 @@ const GameBoard: React.FC = () => {
               setTimeLeft(data.time_per_round);
             }
           } else if (data.type === 'wrong_guess') {
-            console.log(`Игрок ${data.player_id} неправильно угадал: ${data.guess}`);
-          } else if (data.type === 'game_finished') {
-            toast.info('Игра завершена!');
-            navigate(`/room/${roomCode}`);
+            if (isDev()) {
+              console.log(`Игрок ${data.player_id} неправильно угадал: ${data.guess}`);
+            }
           } else if (data.type === 'player_left') {
-            console.log('Игрок вышел из игры:', data);
+            if (isDev()) {
+              console.log('Игрок вышел из игры:', data);
+            }
             
             const playerId = data.player_id || (data.player && data.player.id);
-            console.log('Удаляем игрока с ID:', playerId);
+            if (isDev()) {
+              console.log('Удаляем игрока с ID:', playerId);
+            }
             
             if (playerId) {
               setGameState(prevState => {
                 if (!prevState) return prevState;
                 
                 const updatedPlayers = prevState.players.filter(p => p.id !== playerId.toString());
-                console.log('Обновленный список игроков:', updatedPlayers);
+                if (isDev()) {
+                  console.log('Обновленный список игроков:', updatedPlayers);
+                }
                 
                 return {
                   ...prevState,
@@ -302,21 +342,29 @@ const GameBoard: React.FC = () => {
             }
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          if (isDev()) {
+            console.error('Error parsing WebSocket message:', error);
+          }
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        if (isDev()) {
+          console.error('WebSocket error:', error);
+        }
         isConnecting.current = false;
       };
 
       ws.onclose = (event) => {
-        console.log(`WebSocket closed with code ${event.code}`);
+        if (isDev()) {
+          console.log(`WebSocket closed with code ${event.code}`);
+        }
         isConnecting.current = false;
 
         if (event.code !== 1000 && event.code !== 1001 && isComponentMounted.current && user && roomCode) {
-          console.log('Планируем восстановление WebSocket соединения...');
+          if (isDev()) {
+            console.log('Планируем восстановление WebSocket соединения...');
+          }
           
           // Очищаем предыдущий таймаут, если он был
           if (reconnectTimeoutRef.current) {
@@ -327,7 +375,9 @@ const GameBoard: React.FC = () => {
           reconnectTimeoutRef.current = setTimeout(() => {
             // Проверяем, что компонент всё еще смонтирован
             if (isComponentMounted.current) {
-              console.log('Восстановление WebSocket соединения...');
+              if (isDev()) {
+                console.log('Восстановление WebSocket соединения...');
+              }
               connectWebSocket();
             }
           }, 3000);
@@ -336,7 +386,9 @@ const GameBoard: React.FC = () => {
 
       wsRef.current = ws;
     } catch (e) {
-      console.error('Error creating WebSocket:', e);
+      if (isDev()) {
+        console.error('Error creating WebSocket:', e);
+      }
       isConnecting.current = false;
     }
   }, [fetchGameState, roomCode, user, wsBaseUrl]);
@@ -359,12 +411,16 @@ const GameBoard: React.FC = () => {
 
     return () => {
       if (wsRef.current) {
-        console.log('Закрытие WebSocket соединения при размонтировании компонента');
+        if (isDev()) {
+          console.log('Закрытие WebSocket соединения при размонтировании компонента');
+        }
         
         try {
           wsRef.current.close(1000, 'Компонент размонтирован');
         } catch (e) {
-          console.warn('Ошибка при закрытии WebSocket соединения:', e);
+          if (isDev()) {
+            console.warn('Ошибка при закрытии WebSocket соединения:', e);
+          }
         }
         
         wsRef.current = null;
@@ -422,7 +478,9 @@ const GameBoard: React.FC = () => {
     try {
       await axios.post(`${apiBaseUrl}/api/game/${roomCode}/chat`, { message });
     } catch (error) {
-      console.error('Ошибка при отправке сообщения в чат:', error);
+      if (isDev()) {
+        console.error('Ошибка при отправке сообщения в чат:', error);
+      }
     }
   };
 
@@ -457,7 +515,9 @@ const GameBoard: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error submitting guess:', error);
+      if (isDev()) {
+        console.error('Error submitting guess:', error);
+      }
       setError('Не удалось отправить догадку');
     } finally {
       setLoading(false);
@@ -470,11 +530,15 @@ const GameBoard: React.FC = () => {
 
     // Сначала закрываем WebSocket-соединение и очищаем все таймауты
     if (wsRef.current) {
-      console.log('Закрытие WebSocket-соединения перед выходом из игры');
+      if (isDev()) {
+        console.log('Закрытие WebSocket-соединения перед выходом из игры');
+      }
       try {
         wsRef.current.close(1000, 'Игрок вышел из игры');
       } catch (e) {
-        console.warn('Ошибка при закрытии WebSocket:', e);
+        if (isDev()) {
+          console.warn('Ошибка при закрытии WebSocket:', e);
+        }
       }
       wsRef.current = null;
     }
@@ -498,20 +562,30 @@ const GameBoard: React.FC = () => {
 
     // Используем таймаут для гарантированного перенаправления
     const redirectTimeout = setTimeout(() => {
-      console.log('Выполняется запасной перенаправление после таймаута');
+      if (isDev()) {
+        console.log('Выполняется запасной перенаправление после таймаута');
+      }
       navigate('/', { replace: true });
     }, 1500);
 
     try {
-      console.log('Отправка запроса на выход из игры...');
+      if (isDev()) {
+        console.log('Отправка запроса на выход из игры...');
+      }
       await gameApi.leaveGame(roomCode);
-      console.log('Успешный выход из игры');
+      if (isDev()) {
+        console.log('Успешный выход из игры');
+      }
     } catch (apiError: any) {
-      console.error('Ошибка при выходе из игры:', apiError);
+      if (isDev()) {
+        console.error('Ошибка при выходе из игры:', apiError);
+      }
     } finally {
       clearTimeout(redirectTimeout);
       
-      console.log('Перенаправление на главную страницу после выхода');
+      if (isDev()) {
+        console.log('Перенаправление на главную страницу после выхода');
+      }
       navigate('/', { replace: true });
     }
   };
@@ -533,10 +607,10 @@ const GameBoard: React.FC = () => {
     const isWarning = seconds <= 20 && seconds > 10;
     
     const digitClass = isDanger 
-      ? "bg-red-100 px-2 py-1 rounded-md border border-red-300" 
+      ? 'bg-red-100 px-2 py-1 rounded-md border border-red-300' 
       : isWarning 
-        ? "bg-orange-50 px-2 py-1 rounded-md border border-orange-200" 
-        : "bg-blue-50 px-2 py-1 rounded-md";
+        ? 'bg-orange-50 px-2 py-1 rounded-md border border-orange-200' 
+        : 'bg-blue-50 px-2 py-1 rounded-md';
     
     return (
       <>
@@ -573,7 +647,7 @@ const GameBoard: React.FC = () => {
                 animationDuration: `${25 + Math.random() * 15}s`,
                 transform: `rotate(${Math.random() * 30 - 15}deg)`,
                 fontSize: `${1 + Math.random() * 0.8}rem`,
-                opacity: 0.15
+                opacity: 0.15,
               }}
             >
               {word}
@@ -607,7 +681,7 @@ const GameBoard: React.FC = () => {
               <div className="p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white relative">
                 <div className="absolute inset-0 opacity-10">
                   <div className="absolute inset-0 bg-repeat" style={{ 
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.2' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")" 
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.2\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")', 
                   }}></div>
                 </div>
                 
@@ -735,7 +809,7 @@ const GameBoard: React.FC = () => {
               animationDuration: `${25 + Math.random() * 15}s`,
               transform: `rotate(${Math.random() * 30 - 15}deg)`,
               fontSize: `${1 + Math.random() * 0.8}rem`,
-              opacity: 0.15
+              opacity: 0.15,
             }}
           >
             {word}
@@ -750,9 +824,9 @@ const GameBoard: React.FC = () => {
         {gameState && !loading && !error && (
           <div className="flex justify-center items-center mb-6 game-info-container">
             <div className="flex gap-10 px-8 py-5 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-100 items-center game-info-bar" 
-                 style={{
-                   boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1), 0 0 5px rgba(99, 102, 241, 0.2)'
-                 }}>
+              style={{
+                boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1), 0 0 5px rgba(99, 102, 241, 0.2)',
+              }}>
               <div className="flex flex-col items-center">
                 <span className="text-blue-800 font-medium text-sm mb-2">
                   <span className="info-icon">🎮</span>
@@ -818,7 +892,7 @@ const GameBoard: React.FC = () => {
             <div className="p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white relative">
               <div className="absolute inset-0 opacity-10">
                 <div className="absolute inset-0 bg-repeat" style={{ 
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.2' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")" 
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.2\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")', 
                 }}></div>
               </div>
               

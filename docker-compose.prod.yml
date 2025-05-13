@@ -3,6 +3,7 @@ services:
     image: postgres:13
     volumes:
       - speechtrap_postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
     env_file:
       - .env
     ports:
@@ -21,6 +22,7 @@ services:
         uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1"
     volumes:
       - ./backend:/app
+      - ./logs/backend:/var/log/app
     ports:
       - "8001:8001"
     env_file:
@@ -36,6 +38,9 @@ services:
       dockerfile: Dockerfile
     volumes:
       - /var/www/speechtrap/frontend/build:/frontend/build
+    environment:
+      - VITE_API_URL=http://backend:8001
+      - VITE_DEV_MODE=false
     command: sh -c "npm run build && cp -r build/* /frontend/build"
     depends_on:
       - backend
@@ -49,3 +54,5 @@ networks:
 volumes:
   speechtrap_postgres_data:
   postgres_test_data:
+  app_logs:
+    driver: local

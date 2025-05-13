@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getApiBaseUrl } from '../utils/config';
 import { api } from '../utils/api';
+import { isDev } from '../utils/config';
 
 interface User {
   id: number;
@@ -56,7 +57,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(storedToken);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Ошибка аутентификации:', error);
+        if (isDev()) {
+          console.error('Ошибка аутентификации:', error);
+        }
         localStorage.removeItem('token');
         api.clearAuthToken();
         setToken(null);
@@ -77,16 +80,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
       return Promise.resolve();
     } catch (error) {
-      console.error('Ошибка при входе:', error);
+      if (isDev()) {
+        console.error('Ошибка при входе:', error);
+      }
       return Promise.reject(error);
     }
   };
 
   const logout = () => {
+
     if (token) {
-      api.auth.logout(token).catch(error =>
-        console.error('Ошибка при выходе:', error),
-      );
+      api.auth.logout(token).catch(error => {
+        if (isDev()) {
+          console.error('Ошибка при выходе:', error);
+        }
+      });
     }
 
     localStorage.removeItem('token');
@@ -105,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await api.auth.updateProfile(token, {
         current_password: currentPassword,
         new_password: newPassword,
-        confirm_password: newPassword
+        confirm_password: newPassword,
       });
 
       if (result.error) {
@@ -115,7 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(result.data as User);
       return Promise.resolve();
     } catch (error: any) {
-      console.error('Ошибка при смене пароля:', error);
+      if (isDev()) {
+        console.error('Ошибка при смене пароля:', error);
+      }
       return Promise.reject(error);
     }
   };

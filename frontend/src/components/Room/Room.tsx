@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../utils/axios-config';
-import { getApiBaseUrl } from '../../utils/config';
+import { getApiBaseUrl, isDev } from '../../utils/config';
 import { useAuth } from '../../context/AuthContext';
 import ChatBox from '../Chat/ChatBox';
 import { ChatMessage } from '../../types/chat';
@@ -50,7 +50,7 @@ const Room: React.FC = () => {
   const gameWords = [
     'Табу', 'Слово', 'Ассоциация', 'Описание', 'Загадка', 
     'Угадай', 'Синоним', 'Команда', 'Фраза', 'Общение',
-    'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка'
+    'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка',
   ];
 
   useEffect(() => {
@@ -77,7 +77,9 @@ const Room: React.FC = () => {
             
       // Перенаправляем в игру, если она уже запущена
       if (response.data.status === 'playing') {
-        console.log('Игра уже запущена, перенаправляем в игру');
+        if (isDev()) {
+          console.log('Игра уже запущена, перенаправляем в игру');
+        }
         navigate(`/game/${roomId}`);
         return;
       }
@@ -114,7 +116,9 @@ const Room: React.FC = () => {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log(`WebSocket connection opened to room ${roomId}`);
+        if (isDev()) {
+          console.log(`WebSocket connection opened to room ${roomId}`);
+        }
         fetchRoomData();
       };
 
@@ -123,7 +127,9 @@ const Room: React.FC = () => {
           const data = JSON.parse(event.data);
 
           if (data.id && processedMessages.current.has(data.id)) {
-            console.log(`Message with ID=${data.id} already processed, skipping.`);
+            if (isDev()) {
+              console.log(`Message with ID=${data.id} already processed, skipping.`);
+            }
             return;
           }
 
@@ -132,26 +138,36 @@ const Room: React.FC = () => {
           }
                     
           if (data.type === 'chat_message') {
-            console.log('Получено сообщение чата:', data);
+            if (isDev()) {
+              console.log('Получено сообщение чата:', data);
+            }
             setChatMessages(prev => [...prev, data]);
           } else if (data.type === 'room_update') {
-            console.log('Room update received:', data.room);
+            if (isDev()) {
+              console.log('Room update received:', data.room);
+            }
             setRoom(data.room);
           } else if (data.type === 'player_left') {
-            console.log(`Player left: ID=${data.player_id}, Message: ${data.message}`);
+            if (isDev()) {
+              console.log(`Player left: ID=${data.player_id}, Message: ${data.message}`);
+            }
             setRoom((prevRoom) => {
               if (!prevRoom) return prevRoom;
 
               // Проверяем, существует ли игрок в списке
               const playerExists = prevRoom.players.some(player => player.id === data.player_id);
               if (!playerExists) {
-                console.log(`Player with ID=${data.player_id} not found, skipping update.`);
+                if (isDev()) {
+                  console.log(`Player with ID=${data.player_id} not found, skipping update.`);
+                }
                 return prevRoom;
               }
 
               // Удаляем игрока из списка
               const updatedPlayers = prevRoom.players.filter(player => player.id !== data.player_id);
-              console.log('Updated players list after user_left/player_left:', updatedPlayers);
+              if (isDev()) {
+                console.log('Updated players list after user_left/player_left:', updatedPlayers);
+              }
 
               return {
                 ...prevRoom,
@@ -160,9 +176,13 @@ const Room: React.FC = () => {
               };
             });
           } else if (data.type === 'game_state_update') {
-            console.log('Received game_state_update, checking game state');
+            if (isDev()) {
+              console.log('Received game_state_update, checking game state');
+            }
           } else if (data.type === 'player_joined') {
-            console.log('Player joined:', data.player);
+            if (isDev()) {
+              console.log('Player joined:', data.player);
+            }
             setRoom(prevRoom => {
               if (!prevRoom) return prevRoom;
 
@@ -183,11 +203,17 @@ const Room: React.FC = () => {
               };
             });
           } else if (data.type === 'game_started') {
-            console.log('Получено сообщение о начале игры');
+            if (isDev()) {
+              console.log('Получено сообщение о начале игры');
+            }
             // Устанавливаем статус комнаты как "playing"
-            console.log('Текущий пользователь перед переходом:', user);
+            if (isDev()) {
+              console.log('Текущий пользователь перед переходом:', user);
+            }
             if (user) {
-              console.log('Сохраняем данные пользователя в localStorage перед переходом');
+              if (isDev()) {
+                console.log('Сохраняем данные пользователя в localStorage перед переходом');
+              }
               localStorage.setItem('user', JSON.stringify(user));
             }
             setRoom(prevRoom => prevRoom ? {...prevRoom, status: 'playing'} : null);
@@ -195,12 +221,16 @@ const Room: React.FC = () => {
               socketRef.current.close(1000, 'Game started, leaving room');
             }                       
             // Перенаправляем пользователя в игру
-            console.log(`Перенаправление на игру: /game/${roomId}`);
+            if (isDev()) {
+              console.log(`Перенаправление на игру: /game/${roomId}`);
+            }
             setTimeout(() => {
               if (socketRef.current) {
                 socketRef.current.close(1000, 'Game started, leaving room');
               }
-              console.log(`Перенаправление на игру: /game/${roomId}`);
+              if (isDev()) {
+                console.log(`Перенаправление на игру: /game/${roomId}`);
+              }
               navigate(`/game/${roomId}`);
             }, 100);
           } else if (data.type === 'room_closed') {
@@ -212,7 +242,9 @@ const Room: React.FC = () => {
             });
             navigate('/', { replace: true });
           } else if (data.type === 'player_score_updated') {
-            console.log('Player score updated:', data);
+            if (isDev()) {
+              console.log('Player score updated:', data);
+            }
             setRoom(prevRoom => {
               if (!prevRoom) return prevRoom;
                             
@@ -227,24 +259,36 @@ const Room: React.FC = () => {
             });
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          if (isDev()) {
+            console.error('Error parsing WebSocket message:', error);
+          }
           fetchRoomData();
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        if (isDev()) {
+          console.error('WebSocket error:', error);
+        }
         fetchRoomData();
       };
 
       ws.onclose = (event) => {
-        console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
+        if (isDev()) {
+          console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
+        }
         const isPlaying = room?.status?.toLowerCase() === 'playing';
-        console.log(`Текущий статус комнаты при закрытии соединения: ${room?.status}`);
+        if (isDev()) {
+          console.log(`Текущий статус комнаты при закрытии соединения: ${room?.status}`);
+        }
         if (event.code === 1000 || event.code === 1001) {
-          console.log('Нормальное закрытие соединения');
+          if (isDev()) {
+            console.log('Нормальное закрытие соединения');
+          }
           if (isPlaying) {
-            console.log('Перенаправляем на страницу игры после нормального закрытия WebSocket');
+            if (isDev()) {
+              console.log('Перенаправляем на страницу игры после нормального закрытия WebSocket');
+            }
             navigate(`/game/${roomId}`);
           }
         } else if (event.code === 1008 || event.code === 403) {
@@ -255,10 +299,14 @@ const Room: React.FC = () => {
             navigate('/');
           }
         } else if (isPlaying) {
-          console.log('Обнаружена активная игра, перенаправляем на страницу игры');
+          if (isDev()) {
+            console.log('Обнаружена активная игра, перенаправляем на страницу игры');
+          }
           navigate(`/game/${roomId}`);
         } else {
-          console.log('Attempting to reconnect WebSocket...');
+          if (isDev()) {
+            console.log('Attempting to reconnect WebSocket...');
+          }
           setTimeout(connectWebSocket, 3000);
         }
       };
@@ -271,7 +319,9 @@ const Room: React.FC = () => {
     return () => {
       if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         socketRef.current.close();
-        console.log('WebSocket closed on room unmount');
+        if (isDev()) {
+          console.log('WebSocket closed on room unmount');
+        }
       }
     };
   }, [roomId, user, wsBaseUrl, navigate, isAuthenticated, apiBaseUrl]);
@@ -282,7 +332,9 @@ const Room: React.FC = () => {
     try {
       await axios.post(`${apiBaseUrl}/api/rooms/${roomId}/chat`, { message });
     } catch (error) {
-      console.error('Ошибка при отправке сообщения в чат:', error);
+      if (isDev()) {
+        console.error('Ошибка при отправке сообщения в чат:', error);
+      }
     }
   };
 
@@ -380,16 +432,22 @@ const Room: React.FC = () => {
     try {
       setDeleting(true);
             
-      console.log(`Пытаемся начать игру в комнате ${roomId}`);
+      if (isDev()) {
+        console.log(`Пытаемся начать игру в комнате ${roomId}`);
+      }
             
       const response = await axios.post(`${apiBaseUrl}/api/game/${roomId}/start`);
-      console.log('Ответ сервера при запуске игры:', response.data);
+      if (isDev()) {
+        console.log('Ответ сервера при запуске игры:', response.data);
+      }
             
       setTimeout(() => {
         navigate(`/game/${roomId}`);
       }, 500);
     } catch (err) {
-      console.error('Ошибка при запуске игры:', err);
+      if (isDev()) {
+        console.error('Ошибка при запуске игры:', err);
+      }
       if (axios.isAxiosError(err) && err.response) {
         toast.error('Ошибка', {
           description: err.response.data.detail || 'Не удалось запустить игру',
@@ -416,14 +474,18 @@ const Room: React.FC = () => {
       }
             
       await axios.post(`${apiBaseUrl}/api/rooms/${roomId}/leave`);
-      console.log('Успешно покинул лобби:', roomId);
+      if (isDev()) {
+        console.log('Успешно покинул лобби:', roomId);
+      }
             
       // Перенаправляем после небольшой задержки
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 100);
     } catch (error) {
-      console.error('Ошибка при выходе из лобби:', error);
+      if (isDev()) {
+        console.error('Ошибка при выходе из лобби:', error);
+      }
       navigate('/', { replace: true });
     }
   };
@@ -493,7 +555,7 @@ const Room: React.FC = () => {
               animationDuration: `${25 + Math.random() * 15}s`,
               transform: `rotate(${Math.random() * 30 - 15}deg)`,
               fontSize: `${1 + Math.random() * 0.8}rem`,
-              opacity: 0.15
+              opacity: 0.15,
             }}
           >
             {word}
@@ -597,7 +659,7 @@ const Room: React.FC = () => {
 
               {!(room && room.player_count >= 2 && room.status === 'waiting') && (
                 <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">
-                  Для начала игры необходимо минимум 2 игрока и статус комнаты "Ожидание".
+                  Для начала игры необходимо минимум 2 игрока и статус комнаты &quot;Ожидание&quot;.
                 </p>
               )}
 
