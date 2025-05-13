@@ -13,6 +13,9 @@ from app.schemas.room import RoomResponse
 from app.schemas.player import PlayerResponse
 from app.models.room import Room
 import jwt
+import os
+
+os.makedirs("/var/log/app", exist_ok=True)
 
 # Настройка логирования
 logging.basicConfig(
