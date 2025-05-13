@@ -4,7 +4,7 @@
     padding: 20px;
     border: 1px solid #ccc;
     border-radius: 8px;
-    background: linear-gradient(135deg, #e0f7fa, #80deea);/* Градиентный фон */
+    background: linear-gradient(135deg, #e0f7fa, #80deea);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -37,29 +37,29 @@ input {
 }
 
 input:focus {
-    border-color: #007bff; /* Цвет фокуса */
-    outline: none; /* Убираем стандартный контур */
+    border-color: #007bff;
+    outline: none;
 }
 
 button {
-    width: 100%; /* Кнопки занимают всю ширину контейнера */
+    width: 100%;
     padding: 10px;
     border: none;
-    border-radius: 4px; /* Закругляем углы */
-    background-color: #90caf9; /* Цвет фона кнопок */
+    border-radius: 4px;
+    background-color: #90caf9;
     color: white;
     cursor: pointer;
     margin-top: 5px;
-    font-size: 16px; /* Увеличиваем размер шрифта */
-    transition: background 0.3s ease, transform 0.2s ease; /* Плавные переходы */
+    font-size: 16px;
+    transition: background 0.3s ease, transform 0.2s ease;
 }
 
 button:hover {
-    background: linear-gradient(90deg, #0056b3, #004494); /* Темнее при наведении */
-    transform: translateY(-2px); /* Легкий подъем кнопки при наведении */
+    background: linear-gradient(90deg, #0056b3, #004494);
+    transform: translateY(-2px);
 }
 button[disabled] {
-    background-color: #ccc; /* Цвет кнопки при загрузке */
+    background-color: #ccc;
 }
 
 .login-link {

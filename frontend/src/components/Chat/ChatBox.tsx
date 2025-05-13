@@ -39,9 +39,15 @@ const ChatBox: React.FC<ChatBoxProps> = ({ roomCode, isExplaining, messages, onS
   return (
     <div className="chat-box">
       <div className="chat-header">
-        <h3>Чат игры</h3>
+        <div className="flex items-center">
+          <span className="mr-2">💬</span>
+          <h3>Чат</h3>
+        </div>
         {isExplaining && (
-          <div className="explaining-indicator">Вы объясняете слово</div>
+          <div className="explaining-indicator">
+            <span className="mr-1">✨</span>
+            Вы объясняете слово
+          </div>
         )}
       </div>
       
@@ -71,20 +77,26 @@ const ChatBox: React.FC<ChatBoxProps> = ({ roomCode, isExplaining, messages, onS
       </div>
       
       <form className="chat-input" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={isExplaining ? 'Объясните слово другим игрокам...' : 'Введите сообщение...'}
-          disabled={isSending}
-        />
-        <button 
-          type="submit" 
-          disabled={isSending || !newMessage.trim()}
-          className={isExplaining ? 'explaining-button' : ''}
-        >
-          Отправить
-        </button>
+        <div className="relative w-full flex items-center">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder={isExplaining ? 'Объясните слово другим игрокам...' : 'Введите сообщение...'}
+            disabled={isSending}
+            className="w-full"
+          />
+          <button 
+            type="submit" 
+            title="Отправить"
+            disabled={isSending || !newMessage.trim()}
+            className={`send-button ${isExplaining ? 'explaining-button' : ''}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+              <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+            </svg>
+          </button>
+        </div>
       </form>
     </div>
   );

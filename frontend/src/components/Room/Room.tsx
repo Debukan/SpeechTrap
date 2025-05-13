@@ -47,6 +47,12 @@ const Room: React.FC = () => {
   const processedMessages = useRef<Set<string>>(new Set());
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
+  const gameWords = [
+    'Табу', 'Слово', 'Ассоциация', 'Описание', 'Загадка', 
+    'Угадай', 'Синоним', 'Команда', 'Фраза', 'Общение',
+    'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка'
+  ];
+
   useEffect(() => {
     if (!isAuthenticated && roomId) {
       navigate('/login', { state: { from: `/room/${roomId}` } });
@@ -427,126 +433,219 @@ const Room: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="menu-container">Загрузка данных комнаты...</div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-xl text-blue-600">Загрузка данных комнаты...</div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="menu-container">
-      <h2>Ошибка</h2>
-      <p>{error}</p>
-      <button onClick={() => navigate('/')}>Вернуться на главную</button>
-    </div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-auto">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Ошибка</h2>
+          <p className="text-gray-700 mb-6">{error}</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all"
+          >
+            Вернуться на главную
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!room) {
-    return <div className="menu-container">
-      <h2>Комната не найдена</h2>
-      <button onClick={() => navigate('/')}>Вернуться на главную</button>
-    </div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-auto">
+          <h2 className="text-2xl font-bold text-blue-600 mb-4">Комната не найдена</h2>
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all"
+          >
+            Вернуться на главную
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="menu-container">
-      <h2>Комната: {room.code}</h2>
-      <div className="room-info">
-        <p>Всего раундов: {room.rounds_total}</p>
-        <p>Игроков: {room.player_count} из {room.max_players}</p>
-        <p>Время раунда: {Math.floor(room.time_per_round / 60)} мин.</p>
-        <p>Статус комнаты: {room.status === 'waiting' ? 'Ожидание' : room.status}</p>
-      </div>
-
-      <div className="players-list">
-        <h3>Игроки в лобби:</h3>
-        {room.players.length === 0 ? (
-          <p>Ожидание игроков...</p>
-        ) : (
-          <ul>
-            {room.players.map((player) => (
-              <li key={player.id} className={player.name === user?.name ? 'current-player' : ''}>
-                {player.name} {player.name === user?.name ? '(Вы)' : ''}
-                <span className="player-score">
-                  {typeof player.score_total === 'number' ? `${player.score_total} очков` : '0 очков'}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {isUserJoined() && (
-        <div className="room-chat">
-          <ChatBox 
-            roomCode={roomId || ''}
-            isExplaining={false}
-            messages={chatMessages}
-            onSendMessage={handleSendChatMessage}
-          />
-        </div>
-      )}
-
-      {joinError && <div className="error-message">{joinError}</div>}
-
-      <div className="actions">
-        {isUserJoined() ? (
-          <>
-            {isRoomCreator() && (
-              <button 
-                id="start-game-button"
-                className="start-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('Кнопка нажата!');
-                  handleStartGame();
-                }}
-                style={{
-                  cursor: room && room.player_count >= 2 && room.status === 'waiting' ? 'pointer' : 'not-allowed',
-                  backgroundColor: room && room.player_count >= 2 && room.status === 'waiting' ? '#ff9800' : '#cccccc',
-                  position: 'relative',
-                  zIndex: 10,
-                }}
-                disabled={!(room && room.player_count >= 2 && room.status === 'waiting')}
-              >
-                {deleting ? 'Запуск игры...' : 'Начать игру'}
-              </button>
-            )}
-
-            {!(room && room.player_count >= 2 && room.status === 'waiting') && (
-              <p style={{ color: 'red', fontSize: '0.9em' }}>
-                                Для начала игры необходимо минимум 2 игрока и статус комнаты "Ожидание".
-              </p>
-            )}
-
-            {!isRoomCreator() && room.status === 'waiting' && (
-              <div className="waiting-message">
-                                Ожидание запуска игры создателем комнаты...
-              </div>
-            )}
-
-            {room && room.players.length > 0 && room.players[0].name === user?.name && (
-              <button 
-                onClick={handleCloseRoom}
-                disabled={deleting}
-                className="danger-button"
-              >
-                {deleting ? 'Закрытие...' : 'Закрыть лобби'}
-              </button>
-            )}
-          </>
-        ) : (
-          <button 
-            onClick={handleJoinRoom} 
-            disabled={joining || (room ? room.is_full : false)}
+    <div className="container mx-auto px-4 py-8">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute top-1/3 -left-20 w-80 h-80 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+        
+        {gameWords.map((word, index) => (
+          <div 
+            key={index}
+            className="floating-word absolute"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 20}s`,
+              animationDuration: `${25 + Math.random() * 15}s`,
+              transform: `rotate(${Math.random() * 30 - 15}deg)`,
+              fontSize: `${1 + Math.random() * 0.8}rem`,
+              opacity: 0.15
+            }}
           >
-            {joining ? 'Присоединение...' : 'Присоединиться к комнате'}
-          </button>
+            {word}
+          </div>
+        ))}
+      </div>
+      
+      <div className="menu-container bg-white relative z-10">
+        <div className="absolute -top-10 -left-10 w-24 h-24 bg-purple-200 rounded-full opacity-50 speech-bubble-decoration"></div>
+        <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-blue-200 rounded-full opacity-50 speech-bubble-decoration"></div>
+        
+        <div className="text-center mb-6 relative pt-4">
+          <div className="absolute -top-2 -left-2 text-5xl opacity-20">🎮</div>
+          <div className="absolute -bottom-2 -right-2 text-5xl opacity-20">💬</div>
+          <h2 className="text-2xl font-bold text-blue-800 mb-3">
+            <span>Комната: </span>
+            <span className="bg-blue-50 px-2 py-1 rounded-md text-blue-700 font-mono">{room.code}</span>
+          </h2>
+          <p className="text-blue-600 opacity-75 text-base">Подготовка к игре</p>
+        </div>
+        
+        <div className="room-info">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center">
+              <span className="text-blue-500 mr-2">🎯</span>
+              <p>Всего раундов: <span className="font-semibold">{room.rounds_total}</span></p>
+            </div>
+            <div className="flex items-center">
+              <span className="text-blue-500 mr-2">👥</span>
+              <p>Игроков: <span className="font-semibold">{room.player_count} из {room.max_players}</span></p>
+            </div>
+            <div className="flex items-center">
+              <span className="text-blue-500 mr-2">⏱️</span>
+              <p>Время раунда: <span className="font-semibold">{Math.floor(room.time_per_round / 60)} мин.</span></p>
+            </div>
+            <div className="flex items-center">
+              <span className="text-blue-500 mr-2">📊</span>
+              <p>Статус: <span className="font-semibold">{room.status === 'waiting' ? 'Ожидание' : room.status}</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div className="players-list">
+          <h3 className="flex items-center text-xl mb-4 justify-center">
+            <span className="mr-2">👥</span>
+            Игроки в лобби:
+          </h3>
+          {room.players.length === 0 ? (
+            <p className="text-center text-gray-500 italic py-4">Ожидание игроков...</p>
+          ) : (
+            <ul>
+              {room.players.map((player) => (
+                <li key={player.id} className={player.name === user?.name ? 'current-player' : ''}>
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                      {player.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span>{player.name} {player.name === user?.name ? '(Вы)' : ''}</span>
+                  </div>
+                  <span className="player-score">
+                    {typeof player.score_total === 'number' ? `${player.score_total} очков` : '0 очков'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {isUserJoined() && (
+          <div className="room-chat">
+            <ChatBox 
+              roomCode={roomId || ''}
+              isExplaining={false}
+              messages={chatMessages}
+              onSendMessage={handleSendChatMessage}
+            />
+          </div>
         )}
 
-        <button 
-          onClick={isUserJoined() ? handleLeaveRoom : () => navigate('/')} 
-          className="secondary-button"
-        >
-          {isUserJoined() ? 'Выйти из комнаты' : 'Вернуться на главную'}
-        </button>
+        {joinError && <div className="error-message">{joinError}</div>}
+
+        <div className="actions space-y-4">
+          {isUserJoined() ? (
+            <>
+              {isRoomCreator() && (
+                <button 
+                  id="start-game-button"
+                  className="start-button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleStartGame();
+                  }}
+                  disabled={!(room && room.player_count >= 2 && room.status === 'waiting')}
+                >
+                  <div className="flex items-center justify-center">
+                    <span className="mr-3">🎮</span>
+                    <span>{deleting ? 'Запуск игры...' : 'Начать игру'}</span>
+                  </div>
+                </button>
+              )}
+
+              {!(room && room.player_count >= 2 && room.status === 'waiting') && (
+                <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">
+                  Для начала игры необходимо минимум 2 игрока и статус комнаты "Ожидание".
+                </p>
+              )}
+
+              {!isRoomCreator() && room.status === 'waiting' && (
+                <div className="waiting-message">
+                  <p className="flex items-center justify-center">
+                    <span className="mr-2">⌛</span>
+                    Ожидание запуска игры создателем комнаты...
+                  </p>
+                </div>
+              )}
+
+              {room && room.players.length > 0 && room.players[0].name === user?.name && (
+                <button 
+                  onClick={handleCloseRoom}
+                  disabled={deleting}
+                  className="danger-button"
+                >
+                  <div className="flex items-center justify-center">
+                    <span className="mr-3">🚫</span>
+                    <span>{deleting ? 'Закрытие...' : 'Закрыть лобби'}</span>
+                  </div>
+                </button>
+              )}
+            </>
+          ) : (
+            <button 
+              onClick={handleJoinRoom} 
+              disabled={joining || (room ? room.is_full : false)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600"
+            >
+              <div className="flex items-center justify-center">
+                <span className="mr-3">🚪</span>
+                <span>{joining ? 'Присоединение...' : 'Присоединиться к комнате'}</span>
+              </div>
+            </button>
+          )}
+
+          <button 
+            onClick={isUserJoined() ? handleLeaveRoom : () => navigate('/')} 
+            className="secondary-button"
+          >
+            <div className="flex items-center justify-center">
+              <span className="mr-3">{isUserJoined() ? '🚶' : '🏠'}</span>
+              <span>{isUserJoined() ? 'Выйти из комнаты' : 'Вернуться на главную'}</span>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );

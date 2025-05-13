@@ -21,21 +21,31 @@ const ProfileIcon: React.FC = () => {
   };
 
   return (
-    <div className="profile-icon-container">
+    <div className="flex items-center gap-3">
       {isAuthenticated ? (
-        <div className="user-controls">
-          <span className="user-name">{user?.name || 'Пользователь'}</span>
-          <div className="profile-icon" onClick={handleProfileClick}>
-            <span>👤</span>
+        <>
+          <div 
+            className="profile-icon-button flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 cursor-pointer transition-all duration-300"
+            onClick={handleProfileClick}
+          >
+            <span className="text-white">
+              {user?.name?.charAt(0)?.toUpperCase() || 'У'}
+            </span>
           </div>
-          <button className="logout-button" onClick={handleLogout}>
-                        Выйти
+          <button 
+            onClick={handleLogout}
+            className="logout-button bg-gradient-to-r from-red-500 to-red-700 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-md hover:from-red-600 hover:to-red-800 transition-all duration-200 flex items-center justify-center"
+          >
+            Выйти
           </button>
-        </div>
+        </>
       ) : (
-        <div className="profile-icon" onClick={() => navigate('/login')}>
-          <span>👤</span>
-        </div>
+        <button 
+          onClick={() => navigate('/login')}
+          className="login-button bg-gradient-to-r from-blue-500 to-blue-700 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-md hover:from-blue-600 hover:to-blue-800 transition-all duration-200 flex items-center justify-center"
+        >
+          Войти
+        </button>
       )}
     </div>
   );

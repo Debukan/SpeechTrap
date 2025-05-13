@@ -27,6 +27,7 @@
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+  margin-top: 1rem;
 }
 
 .waiting-screen {
@@ -304,4 +305,306 @@ button {
   .game-container {
     padding: 20px;
   }
+}
+
+.floating-word {
+  position: absolute;
+  color: rgba(14, 165, 233, 0.2);
+  pointer-events: none;
+  animation: float-word 25s linear infinite;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+@keyframes float-word {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.3;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-100px) rotate(5deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-speech {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.speech-bubble-decoration {
+  animation: pulse-speech 4s ease-in-out infinite;
+}
+
+.game-button {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.game-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
+  z-index: -1;
+}
+
+.game-button:hover::before {
+  left: 100%;
+}
+
+.game-button:hover {
+  transform: translateY(-2px);
+}
+
+.game-button:active {
+  transform: translateY(1px);
+}
+
+@keyframes timer-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.game-info-bar {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-info-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.3) 100%);
+  transform: translateX(-100%);
+  animation: shimmer 3s infinite;
+  z-index: 1;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.time-warning {
+  animation: timer-pulse 1s ease-in-out infinite;
+  position: relative;
+}
+
+.time-danger {
+  animation: timer-pulse 0.7s ease-in-out infinite;
+  position: relative;
+}
+
+.danger-parent {
+  position: relative;
+  z-index: 1;
+}
+
+.danger-parent::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -15px;
+  right: -15px;
+  bottom: -12px;
+  border-radius: 10px;
+  background-color: rgba(239, 68, 68, 0.15);
+  z-index: -1;
+  animation: danger-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes danger-glow {
+  from { 
+    opacity: 0.7; 
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+  to { 
+    opacity: 1; 
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), 0 0 5px rgba(239, 68, 68, 0.6);
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.time-danger::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0) 70%);
+  z-index: -1;
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.round-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.round-badge::before,
+.round-badge::after {
+  content: '';
+  position: absolute;
+  width: 110%;
+  height: 110%;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg at 50% 50%, rgba(99, 102, 241, 0.1) 0deg, rgba(168, 85, 247, 0.1) 120deg, rgba(99, 102, 241, 0) 360deg);
+  animation: rotate 8s linear infinite;
+  opacity: 0.3;
+}
+
+.round-badge::after {
+  animation-direction: reverse;
+  animation-duration: 12s;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.time-digits {
+  letter-spacing: 0.1em;
+  position: relative;
+  z-index: 2;
+}
+
+.time-separator {
+  animation: blink 1.5s infinite;
+  opacity: 1;
+  font-weight: bold;
+  display: inline-block;
+  padding: 0 3px;
+  position: relative;
+  color: #2563eb;
+  background-color: rgba(219, 234, 254, 0.4);
+  border-radius: 4px;
+  margin: 0 2px;
+}
+
+.time-separator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.3);
+  z-index: -1;
+  border-radius: 2px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
+}
+
+.round-number {
+  position: relative;
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(59, 130, 246, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  z-index: 2;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.game-info-container {
+  position: relative;
+}
+
+.game-info-container::before {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 3px;
+  bottom: -10px;
+  left: -10%;
+  background: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.5), transparent);
+  border-radius: 1.5px;
+}
+
+.time-icon {
+  margin-right: 0.5rem;
+  opacity: 0.7;
+  transform-origin: center;
+  animation: time-icon-rotate 10s linear infinite;
+}
+
+@keyframes time-icon-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.danger-flash {
+  animation: danger-flash-animation 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes danger-flash-animation {
+  0% { 
+    text-shadow: 0 0 1px rgba(239, 68, 68, 0.5); 
+    transform: scale(1);
+  }
+  100% { 
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 0 3px rgba(239, 68, 68, 0.6); 
+    transform: scale(1.05);
+  }
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.timer-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.timer-wrap::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to right, transparent, currentColor, transparent);
+  opacity: 0.5;
 }

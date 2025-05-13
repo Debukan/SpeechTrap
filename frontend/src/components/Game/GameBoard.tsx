@@ -51,6 +51,12 @@ const GameBoard: React.FC = () => {
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const gameWords = [
+    'Табу', 'Слово', 'Ассоциация', 'Описание', 'Загадка', 
+    'Угадай', 'Синоним', 'Команда', 'Фраза', 'Общение',
+    'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка'
+  ];
+
   // Устанавливаем isComponentMounted в false при размонтировании компонента
   useEffect(() => {
     // Компонент смонтирован
@@ -518,6 +524,29 @@ const GameBoard: React.FC = () => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const formatTimeWithAnimation = (seconds: number | null) => {
+    if (seconds === null) return <>--<span className="px-1">:</span>--</>;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    const isDanger = seconds <= 10;
+    const isWarning = seconds <= 20 && seconds > 10;
+    
+    const digitClass = isDanger 
+      ? "bg-red-100 px-2 py-1 rounded-md border border-red-300" 
+      : isWarning 
+        ? "bg-orange-50 px-2 py-1 rounded-md border border-orange-200" 
+        : "bg-blue-50 px-2 py-1 rounded-md";
+    
+    return (
+      <>
+        <span className={digitClass}>{minutes.toString().padStart(2, '0')}</span>
+        <span className={`time-separator px-1 font-bold ${isDanger ? 'text-red-600' : isWarning ? 'text-orange-500' : ''}`}>:</span>
+        <span className={digitClass}>{remainingSeconds.toString().padStart(2, '0')}</span>
+      </>
+    );
+  };
+
   const getTimerClass = () => {
     if (!timeLeft) return '';
     if (timeLeft <= 10) return 'danger';
@@ -527,119 +556,376 @@ const GameBoard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="error-container">
-        <h2>Ошибка</h2>
-        <p>{error}</p>
-        <button onClick={() => navigate('/')}>Вернуться на главную</button>
+      <div className="game-board-container min-h-screen relative">
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/3 -left-20 w-80 h-80 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
+          <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+          
+          {gameWords.map((word, index) => (
+            <div 
+              key={index}
+              className="floating-word absolute"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 20}s`,
+                animationDuration: `${25 + Math.random() * 15}s`,
+                transform: `rotate(${Math.random() * 30 - 15}deg)`,
+                fontSize: `${1 + Math.random() * 0.8}rem`,
+                opacity: 0.15
+              }}
+            >
+              {word}
+            </div>
+          ))}
+        </div>
+
+        <div className="container mx-auto p-4 relative z-10">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-[80vh]">
+              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-xl font-semibold text-blue-800">Загрузка игры...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-[80vh]">
+              <div className="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
+                <div className="text-red-500 mb-4 text-3xl text-center">⚠️</div>
+                <h2 className="text-2xl font-bold text-center text-red-600 mb-4">Ошибка</h2>
+                <p className="text-center text-gray-700 mb-6">{error}</p>
+                <button 
+                  onClick={() => navigate('/')}
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+                >
+                  <span className="mr-2">↩️</span>
+                  <span>Вернуться в главное меню</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-blue-100 overflow-hidden">
+              <div className="p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white relative">
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute inset-0 bg-repeat" style={{ 
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.2' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")" 
+                  }}></div>
+                </div>
+                
+                <div className="flex justify-between items-center relative z-10">
+                  <div>
+                    <h1 className="text-xl font-bold">Комната: {roomCode}</h1>
+                  </div>
+                  
+                  <button 
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center"
+                    onClick={handleLeaveGame}
+                  >
+                    <span className="mr-2">🚪</span>
+                    Покинуть игру
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="md:col-span-1 space-y-6">
+                    <div className="bg-blue-50 rounded-xl p-4 shadow-md border border-blue-100">
+                      <h2 className="text-lg font-bold text-blue-800 mb-3 border-b border-blue-200 pb-2">Игроки</h2>
+                      <div className="space-y-2">
+                        {gameState?.players.map((player) => (
+                          <div key={player.id} className="flex justify-between items-center p-2 rounded-lg bg-white shadow-sm border border-blue-50">
+                            <div className="flex items-center">
+                              <div className={`w-3 h-3 rounded-full mr-2 ${player.role === 'EXPLAINING' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                              <span className="font-medium">{player.username}</span>
+                              {player.role === 'EXPLAINING' && <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 py-1 px-2 rounded-full">Объясняет</span>}
+                            </div>
+                            <div className="bg-blue-100 px-3 py-1 rounded-full text-blue-800 font-bold">{player.score}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-4">
+                    {gameState?.status === 'PLAYING' && (
+                      <div>
+                        {isExplainingPlayer() ? (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 shadow-lg relative overflow-hidden">
+                            <div className="absolute -top-6 -right-6 w-16 h-16 bg-yellow-300 rounded-full opacity-30"></div>
+                            <div className="absolute bottom-1/3 -left-6 w-20 h-20 bg-yellow-200 rounded-full opacity-20"></div>
+                            <h3 className="text-center text-xl font-bold text-yellow-800 mb-4 relative z-10">Объясните это слово</h3>
+                            <div className="word-card text-center p-4 bg-white rounded-lg border-2 border-yellow-300 shadow-md relative z-10">
+                              <p className="text-3xl font-bold text-yellow-800">{gameState.currentWord}</p>
+                            </div>
+                            {gameState.associations && gameState.associations.length > 0 && (
+                              <div className="mt-4 relative z-10">
+                                <h4 className="text-center font-semibold text-yellow-700 mb-2">Запрещённые слова:</h4>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                  {gameState.associations.map((word, index) => (
+                                    <div key={index} className="error-container">
+                                      <h2>Ошибка</h2>
+                                      <p>{error}</p>
+                                      <button onClick={() => navigate('/')}>Вернуться на главную</button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 shadow-lg relative overflow-hidden">
+                            <div className="absolute -top-6 -right-6 w-16 h-16 bg-yellow-300 rounded-full opacity-30"></div>
+                            <div className="absolute bottom-1/3 -left-6 w-20 h-20 bg-yellow-200 rounded-full opacity-20"></div>
+                            <h3 className="text-center text-xl font-bold text-yellow-800 mb-4 relative z-10">Угадайте слово</h3>
+                            <div className="word-card text-center p-4 bg-white rounded-lg border-2 border-yellow-300 shadow-md relative z-10">
+                              <p className="text-3xl font-bold text-yellow-800">{gameState.currentWord}</p>
+                            </div>
+                            {gameState.associations && gameState.associations.length > 0 && (
+                              <div className="mt-4 relative z-10">
+                                <h4 className="text-center font-semibold text-yellow-700 mb-2">Запрещённые слова:</h4>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                  {gameState.associations.map((word, index) => (
+                                    <div key={index} className="error-container">
+                                      <h2>Ошибка</h2>
+                                      <p>{error}</p>
+                                      <button onClick={() => navigate('/')}>Вернуться на главную</button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-hidden mt-0">
+                      <ChatBox
+                        roomCode={roomCode || ''}
+                        isExplaining={isExplainingPlayer()}
+                        messages={chatMessages}
+                        onSendMessage={handleSendChatMessage}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="game-container">
-      <h1>Игра в комнате: {roomCode}</h1>
-
-      {gameState ? (
-        <div className="game-content">
-          <div className="game-info">
-            <p><strong>Раунд:</strong> {gameState.round} из {gameState.rounds_total}</p>
-            {isExplainingPlayer() && gameState.currentWord && (
-              <div className="current-word">
-                <p><strong>Ваше слово:</strong> {gameState.currentWord}</p>
-                
-                {gameState.associations && gameState.associations.length > 0 && (
-                  <div className="forbidden-words">
-                    <p><strong>Запрещено использовать:</strong></p>
-                    <ul className="associations-list">
-                      {gameState.associations.map((association, index) => (
-                        <li key={index} className="forbidden-word">{association}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                <p className="word-instruction">Объясните это слово другим игрокам, не используя его и однокоренные слова</p>
-              </div>
-            )}
-
-            <div className={`timer-display ${getTimerClass()}`}>
-              <p><strong>Оставшееся время:</strong> {formatTime(timeLeft)}</p>
-              <div className="progress-bar">
-                <div
-                  className="progress"
-                  style={{
-                    width: `${timeLeft !== null ? (timeLeft / timePerRound) * 100 : 0}%`,
-                    backgroundColor: timeLeft !== null && timeLeft < 10 ? '#ff0000' :
-                      timeLeft !== null && timeLeft < 20 ? '#ffc107' : '#4caf50',
-                  }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {gameState.status === 'PLAYING' && (
-            <div className="game-actions">
-              {isExplainingPlayer() ? (
-                <div className="player-controls">
-                  <p>Ваш ход! Объясните слово другим игрокам.</p>
-                </div>
-              ) : (
-                <div className="guess-form">
-                  <form onSubmit={handleSubmitGuess}>
-                    <input
-                      type="text"
-                      value={guess}
-                      onChange={(e) => setGuess(e.target.value)}
-                      placeholder="Введите вашу догадку..."
-                      disabled={loading}
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading || !guess.trim()}
-                    >
-                      Отправить
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="players-section">
-            <h3>Игроки</h3>
-            <ul className="players-list">
-              {gameState.players.map((player) => (
-                <li
-                  key={player.id}
-                  className={`player-item ${player.id === gameState.currentPlayer ? 'current-player' : ''}`}
-                >
-                  {player.username}: {player.score} очков
-                  {player.id === user?.id && ' (Вы)'}
-                  {player.id === gameState.currentPlayer && ' (Ходит)'}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <button
-            className="leave-game-btn"
-            onClick={handleLeaveGame}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute top-1/3 -left-20 w-80 h-80 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+        
+        {gameWords.map((word, index) => (
+          <div 
+            key={index}
+            className="floating-word absolute"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 20}s`,
+              animationDuration: `${25 + Math.random() * 15}s`,
+              transform: `rotate(${Math.random() * 30 - 15}deg)`,
+              fontSize: `${1 + Math.random() * 0.8}rem`,
+              opacity: 0.15
+            }}
           >
-            Покинуть игру
-          </button>
-        </div>
-      ) : (
-        <div className="loading-container">
-          <p>Загрузка состояния игры...</p>
-          <div className="spinner"></div>
-        </div>
-      )}
-      <ChatBox 
-        roomCode={roomCode || ''}
-        isExplaining={isExplainingPlayer()}
-        messages={chatMessages}
-        onSendMessage={handleSendChatMessage}
-      />
+            {word}
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute -top-10 left-1/4 w-20 h-20 bg-purple-200 rounded-full opacity-30 speech-bubble-decoration"></div>
+      <div className="absolute -bottom-10 right-1/4 w-24 h-24 bg-blue-200 rounded-full opacity-30 speech-bubble-decoration"></div>
+      
+      <div className="container mx-auto px-4 pt-14 pb-4 relative z-10">
+        {gameState && !loading && !error && (
+          <div className="flex justify-center items-center mb-6 game-info-container">
+            <div className="flex gap-10 px-8 py-5 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-100 items-center game-info-bar" 
+                 style={{
+                   boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1), 0 0 5px rgba(99, 102, 241, 0.2)'
+                 }}>
+              <div className="flex flex-col items-center">
+                <span className="text-blue-800 font-medium text-sm mb-2">
+                  <span className="info-icon">🎮</span>
+                  Раунд
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-blue-700 round-number" style={{ textShadow: '0 0 1px rgba(0,0,0,0.1)' }}>
+                    {gameState.round}/{gameState.rounds_total}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="h-14 w-px bg-gray-200"></div>
+              
+              <div className="flex flex-col items-center">
+                <span className="text-blue-800 font-medium text-sm mb-2">
+                  <span className="info-icon">⏱️</span>
+                  Осталось времени
+                </span>
+                <div 
+                  className={`text-3xl font-bold font-mono timer-wrap time-digits ${
+                    timeLeft && timeLeft <= 10 ? 'danger-parent' : ''
+                  }`} 
+                  style={{ letterSpacing: '0.05em' }}
+                >
+                  <div className={
+                    timeLeft && timeLeft <= 10 
+                      ? 'text-red-600 time-danger danger-flash' 
+                      : timeLeft && timeLeft <= 20 
+                        ? 'text-orange-500 time-warning' 
+                        : 'text-blue-700'
+                  }>
+                    {formatTimeWithAnimation(timeLeft)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-[80vh]">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-xl font-semibold text-blue-800">Загрузка игры...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-[80vh]">
+            <div className="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full">
+              <div className="text-red-500 mb-4 text-3xl text-center">⚠️</div>
+              <h2 className="text-2xl font-bold text-center text-red-600 mb-4">Ошибка</h2>
+              <p className="text-center text-gray-700 mb-6">{error}</p>
+              <button 
+                onClick={() => navigate('/')}
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+              >
+                <span className="mr-2">↩️</span>
+                <span>Вернуться в главное меню</span>
+              </button>
+            </div>
+          </div>
+        ) : gameState ? (
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-blue-100 overflow-hidden">
+            <div className="p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white relative">
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0 bg-repeat" style={{ 
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.2' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")" 
+                }}></div>
+              </div>
+              
+              <div className="flex justify-between items-center relative z-10">
+                <div>
+                  <h1 className="text-xl font-bold">Комната: {roomCode}</h1>
+                </div>
+                
+                <button 
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center"
+                  onClick={handleLeaveGame}
+                >
+                  <span className="mr-2">🚪</span>
+                  Покинуть игру
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="md:col-span-1 space-y-6">
+                  <div className="bg-blue-50 rounded-xl p-4 shadow-md border border-blue-100">
+                    <h2 className="text-lg font-bold text-blue-800 mb-3 border-b border-blue-200 pb-2">Игроки</h2>
+                    <div className="space-y-2">
+                      {gameState.players.map((player) => (
+                        <div key={player.id} className="flex justify-between items-center p-2 rounded-lg bg-white shadow-sm border border-blue-50">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full mr-2 ${player.role === 'EXPLAINING' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                            <span className="font-medium">{player.username}</span>
+                            {player.role === 'EXPLAINING' && <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 py-1 px-2 rounded-full">Объясняет</span>}
+                          </div>
+                          <div className="bg-blue-100 px-3 py-1 rounded-full text-blue-800 font-bold">{player.score}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-4">
+                  {gameState.status === 'PLAYING' && (
+                    <div>
+                      {isExplainingPlayer() ? (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 shadow-lg relative overflow-hidden">
+                          <div className="absolute -top-6 -right-6 w-16 h-16 bg-yellow-300 rounded-full opacity-30"></div>
+                          <div className="absolute bottom-1/3 -left-6 w-20 h-20 bg-yellow-200 rounded-full opacity-20"></div>
+                          <h3 className="text-center text-xl font-bold text-yellow-800 mb-4 relative z-10">Объясните это слово</h3>
+                          <div className="word-card text-center p-4 bg-white rounded-lg border-2 border-yellow-300 shadow-md relative z-10">
+                            <p className="text-3xl font-bold text-yellow-800">{gameState.currentWord}</p>
+                          </div>
+                          {gameState.associations && gameState.associations.length > 0 && (
+                            <div className="mt-4 relative z-10">
+                              <h4 className="text-center font-semibold text-yellow-700 mb-2">Запрещённые слова:</h4>
+                              <div className="flex flex-wrap justify-center gap-2">
+                                {gameState.associations.map((word, index) => (
+                                  <div key={index} className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                                    {word}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-6 shadow-lg relative overflow-hidden">
+                          <div className="absolute -top-6 -left-6 w-16 h-16 bg-green-300 rounded-full opacity-30"></div>
+                          <div className="absolute bottom-1/3 -right-6 w-20 h-20 bg-green-200 rounded-full opacity-20"></div>
+                          <h3 className="text-center text-xl font-bold text-green-800 mb-4 relative z-10">Угадайте слово</h3>
+                          <form onSubmit={handleSubmitGuess} className="flex gap-2 relative z-10">
+                            <input
+                              type="text"
+                              value={guess}
+                              onChange={(e) => setGuess(e.target.value)}
+                              placeholder="Введите ваш вариант..."
+                              className="flex-grow p-3 rounded-lg border-2 border-green-300 focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50 transition-all"
+                            />
+                            <button
+                              type="submit"
+                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center"
+                            >
+                              <span className="mr-2">✅</span>
+                              Ответить
+                            </button>
+                          </form>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-hidden mt-0">
+                    <ChatBox
+                      roomCode={roomCode || ''}
+                      isExplaining={isExplainingPlayer()}
+                      messages={chatMessages}
+                      onSendMessage={handleSendChatMessage}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-[80vh]">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-xl font-semibold text-blue-800">Подготовка игры...</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
