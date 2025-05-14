@@ -31,8 +31,8 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Данные токена"""
 
-    email: str | None = None
-    exp: datetime | None = None
+    email: Optional[str] = None
+    exp: Optional[datetime] = None
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

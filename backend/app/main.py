@@ -13,9 +13,24 @@ from app.schemas.room import RoomResponse
 from app.schemas.player import PlayerResponse
 from app.models.room import Room
 import jwt
+import os
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
+
+log_file_path = os.environ.get("BACKEND_LOG_FILE")
+handlers = []
+if log_file_path:
+    log_dir = os.path.dirname(log_file_path)
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        handlers.append(logging.FileHandler(log_file_path))
+    except Exception:
+        pass
+handlers.append(logging.StreamHandler())
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=handlers
+)
 logger = logging.getLogger("app")
 
 # Импортируем роутеры
@@ -85,9 +100,9 @@ app.include_router(
 app.include_router(
     words.router, prefix="/api/words", tags=["words"]
 )  # Роутер для работы со словами
-app.include_router(
-    debug_router, prefix="/api/debug", tags=["debug"]
-)  # Роутер для отладки
+# app.include_router(
+#     debug_router, prefix="/api/debug", tags=["debug"]
+# )  # Роутер для отладки
 app.include_router(ws.router, prefix="/api", tags=["websocket"])  # Роутер для WebSocket
 app.include_router(game.router, prefix="/api/game", tags=["game"])  # Роутер для игры
 

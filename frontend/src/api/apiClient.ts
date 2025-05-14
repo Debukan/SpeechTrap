@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/config';
+import { isDev } from '../utils/config';
 
 // Получение базового URL API из конфигурации
 const API_BASE_URL = getApiBaseUrl();
@@ -48,7 +49,9 @@ export const fetchUsers = async () => {
     const response = await apiClient.get('/api/users');
     return response.data;
   } catch (error) {
-    console.error('Error fetching users:', error);
+    if (isDev()) {
+      console.error('Error fetching users:', error);
+    }
     throw error;
   }
 };
@@ -61,7 +64,9 @@ export const gameApi = {
       const response = await apiClient.get(`/api/game/${roomCode}/state`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching game state:', error);
+      if (isDev()) {
+        console.error('Error fetching game state:', error);
+      }
       throw error;
     }
   },
@@ -72,7 +77,9 @@ export const gameApi = {
       const response = await apiClient.post(`/api/game/${roomCode}/start`);
       return response.data;
     } catch (error) {
-      console.error('Error starting game:', error);
+      if (isDev()) {
+        console.error('Error starting game:', error);
+      }
       throw error;
     }
   },
@@ -83,7 +90,9 @@ export const gameApi = {
       const response = await apiClient.post(`/api/game/${roomCode}/end-turn`);
       return response.data;
     } catch (error) {
-      console.error('Error ending turn:', error);
+      if (isDev()) {
+        console.error('Error ending turn:', error);
+      }
       throw error;
     }
   },
@@ -94,7 +103,9 @@ export const gameApi = {
       const response = await apiClient.post(`/api/game/${roomCode}/leave`);
       return response.data;
     } catch (error) {
-      console.error('Error leaving game:', error);
+      if (isDev()) {
+        console.error('Error leaving game:', error);
+      }
       throw error;
     }
   },
@@ -105,7 +116,9 @@ export const gameApi = {
       const response = await apiClient.post(`/api/game/${roomCode}/guess`, { guess });
       return response.data;
     } catch (error) {
-      console.error('Error submitting guess:', error);
+      if (isDev()) {
+        console.error('Error submitting guess:', error);
+      }
       throw error;
     }
   },

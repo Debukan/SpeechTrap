@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from './config';
+import { getApiBaseUrl, isDev } from './config';
 import axios from 'axios';
 
 interface RequestOptions {
@@ -35,7 +35,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   }
 
   try {
-    console.log(`API Request: ${options.method || 'GET'} ${url}`, options.body);
+    if (isDev()) {
+      console.log(`API Request: ${options.method || 'GET'} ${url}`, options.body);
+    }
     const response = await fetch(url, {
       method: options.method || 'GET',
       headers,
@@ -43,7 +45,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       credentials: 'same-origin',
     });
 
-    console.log(`Response status: ${response.status}`);
+    if (isDev()) {
+      console.log(`Response status: ${response.status}`);
+    }
     
     let data = null;
     let error = null;
@@ -51,17 +55,23 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
     try {
       if (response.status !== 204) {
         const responseText = await response.text();
-        console.log(`Response text: ${responseText}`);
+        if (isDev()) {
+          console.log(`Response text: ${responseText}`);
+        }
         
         try {
           data = responseText ? JSON.parse(responseText) : null;
         } catch (e) {
-          console.error('Error parsing JSON:', e);
+          if (isDev()) {
+            console.error('Error parsing JSON:', e);
+          }
           error = `Некорректный формат ответа: ${responseText.substring(0, 100)}`;
         }
       }
     } catch (e) {
-      console.error('Error reading response:', e);
+      if (isDev()) {
+        console.error('Error reading response:', e);
+      }
       error = 'Ошибка при обработке ответа сервера';
     }
 
@@ -69,7 +79,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       error = (data && data.detail) || `Ошибка запроса (${response.status})`;
         
       if (response.status === 422) {
-        console.error('Validation error details:', data);
+        if (isDev()) {
+          console.error('Validation error details:', data);
+        }
         error = 'Ошибка валидации данных. Проверьте правильность введённых данных.';
       } else if (response.status === 405) {
         error = 'Метод не разрешён. Проверьте API эндпоинт.';
@@ -82,7 +94,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       status: response.status,
     };
   } catch (e: any) {
-    console.error('API request error:', e);
+    if (isDev()) {
+      console.error('API request error:', e);
+    }
     return {
       data: null,
       error: e.message === 'Failed to fetch' 

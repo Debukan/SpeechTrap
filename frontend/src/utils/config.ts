@@ -22,7 +22,13 @@ export const checkApiAvailability = async (): Promise<boolean> => {
     });
     return response.ok;
   } catch (error) {
-    console.error('API availability check failed:', error);
+    if (isDev()) {
+      console.error('API availability check failed:', error);
+    }
     return false;
   }
+};
+
+export const isDev = () => {
+  return import.meta.env.MODE === 'development' || import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 };

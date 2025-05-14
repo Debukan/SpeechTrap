@@ -3,6 +3,7 @@ services:
     image: postgres:13
     volumes:
       - speechtrap_postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
     env_file:
       - .env
     ports:
@@ -21,6 +22,7 @@ services:
           uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
     volumes:
       - ./backend:/app
+      - ./logs/backend:/var/log/app
     ports:
       - "8001:8001"
     env_file:
@@ -39,10 +41,12 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - ./logs/frontend:/var/log/app
     ports:
       - "3000:3000"
     environment:
       - VITE_API_URL=http://localhost:8001
+      - VITE_DEV_MODE=true
     command: npm run dev
     depends_on:
       - backend
@@ -106,3 +110,5 @@ networks:
 volumes:
   speechtrap_postgres_data:
   postgres_test_data:
+  app_logs:
+    driver: local

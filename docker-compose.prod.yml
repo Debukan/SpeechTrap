@@ -3,6 +3,7 @@ services:
     image: postgres:13
     volumes:
       - speechtrap_postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
     env_file:
       - .env
     ports:
@@ -21,6 +22,7 @@ services:
         uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1"
     volumes:
       - ./backend:/app
+      - ./logs/backend:/var/log/app
     ports:
       - "8001:8001"
     env_file:
@@ -49,3 +51,5 @@ networks:
 volumes:
   speechtrap_postgres_data:
   postgres_test_data:
+  app_logs:
+    driver: local

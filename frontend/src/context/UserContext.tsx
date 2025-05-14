@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { isDev } from '../utils/config';
 
 interface User {
   id: string;
@@ -29,7 +30,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       try {
         setUser(JSON.parse(savedUser));
       } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
+        if (isDev()) {
+          console.error('Error parsing user from localStorage:', error);
+        }
         localStorage.removeItem('user');
       }
     }
