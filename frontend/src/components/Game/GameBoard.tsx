@@ -58,6 +58,16 @@ const GameBoard: React.FC = () => {
     'Игра', 'Объяснение', 'Секрет', 'Запрет', 'Подсказка',
   ];
 
+  const renderForbiddenWords = React.useMemo(() => {
+    if (!gameState?.associations || !gameState.associations.length) return null;
+    
+    return gameState.associations.map((word, index) => (
+      <div key={index} className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+        {word}
+      </div>
+    ));
+  }, [gameState?.associations]);
+
   // Устанавливаем isComponentMounted в false при размонтировании компонента
   useEffect(() => {
     // Компонент смонтирован
@@ -254,13 +264,34 @@ const GameBoard: React.FC = () => {
             setGameState(prevState => {
               if (!prevState) return data.game_state;
 
+              const playersWithRoles = data.game_state.players.map((player: any) => {
+                if (player.id === data.game_state.currentPlayer) {
+                  return {
+                    ...player,
+                    role: 'EXPLAINING',
+                  };
+                }
+                return {
+                  ...player,
+                  role: player.role || 'GUESSING',
+                };
+              });
+
+              const preservedAssociations = data.game_state.associations || prevState.associations;
+
               if (data.game_state.currentWord) {
-                return data.game_state;
+                return {
+                  ...data.game_state,
+                  players: playersWithRoles,
+                  associations: preservedAssociations,
+                };
               }
               
               return {
                 ...data.game_state,
+                players: playersWithRoles,
                 currentWord: data.game_state.currentWord || prevState.currentWord,
+                associations: preservedAssociations,
               };
             });
             
@@ -735,13 +766,7 @@ const GameBoard: React.FC = () => {
                               <div className="mt-4 relative z-10">
                                 <h4 className="text-center font-semibold text-yellow-700 mb-2">Запрещённые слова:</h4>
                                 <div className="flex flex-wrap justify-center gap-2">
-                                  {gameState.associations.map((word, index) => (
-                                    <div key={index} className="error-container">
-                                      <h2>Ошибка</h2>
-                                      <p>{error}</p>
-                                      <button onClick={() => navigate('/')}>Вернуться на главную</button>
-                                    </div>
-                                  ))}
+                                  {renderForbiddenWords}
                                 </div>
                               </div>
                             )}
@@ -758,13 +783,7 @@ const GameBoard: React.FC = () => {
                               <div className="mt-4 relative z-10">
                                 <h4 className="text-center font-semibold text-yellow-700 mb-2">Запрещённые слова:</h4>
                                 <div className="flex flex-wrap justify-center gap-2">
-                                  {gameState.associations.map((word, index) => (
-                                    <div key={index} className="error-container">
-                                      <h2>Ошибка</h2>
-                                      <p>{error}</p>
-                                      <button onClick={() => navigate('/')}>Вернуться на главную</button>
-                                    </div>
-                                  ))}
+                                  {renderForbiddenWords}
                                 </div>
                               </div>
                             )}
@@ -946,11 +965,7 @@ const GameBoard: React.FC = () => {
                             <div className="mt-4 relative z-10">
                               <h4 className="text-center font-semibold text-yellow-700 mb-2">Запрещённые слова:</h4>
                               <div className="flex flex-wrap justify-center gap-2">
-                                {gameState.associations.map((word, index) => (
-                                  <div key={index} className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                                    {word}
-                                  </div>
-                                ))}
+                                {renderForbiddenWords}
                               </div>
                             </div>
                           )}

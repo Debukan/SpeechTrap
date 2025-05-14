@@ -38,9 +38,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - /var/www/speechtrap/frontend/build:/frontend/build
-    environment:
-      - VITE_API_URL=http://backend:8001
-      - VITE_DEV_MODE=false
     command: sh -c "npm run build && cp -r build/* /frontend/build"
     depends_on:
       - backend
