@@ -1067,7 +1067,22 @@ async def submit_guess(
     correct = word_data["word"].lower() == guess
 
     if correct:
-        player.score += 10
+        time_left = 0
+        max_time = room.time_per_round
+        current_time = time.time()
+        
+        with timer_lock:
+            if room_code in room_timers:
+                timer_info = room_timers[room_code]
+                elapsed = current_time - timer_info["start_time"]
+                total_time = timer_info["duration"]
+                time_left = max(0, int(total_time - elapsed))
+        
+        base_points = 10
+        time_bonus = int((time_left / max_time) * 15) if max_time > 0 else 0
+        total_points = base_points + time_bonus
+        
+        player.score += total_points
         player.correct_answers += 1
 
         explaining_player = db.scalar(
@@ -1077,7 +1092,8 @@ async def submit_guess(
         )
 
         if explaining_player:
-            explaining_player.score += 5
+            explaining_points = base_points // 2 + time_bonus // 2
+            explaining_player.score += explaining_points
             explaining_player.role = PlayerRole.GUESSING
 
         player.role = PlayerRole.EXPLAINING
@@ -1138,7 +1154,9 @@ async def submit_guess(
         # Выбираем новое слово
         if room.current_word_id:
             word_data = get_next_word(
-                exclude_id=room.current_word_id, difficulty=room.difficulty, db=db
+                exclude_id=room.current_word_id,
+                difficulty=room.difficulty,
+                db=db,
             )
             if word_data and "id" in word_data:
                 room.current_word_id = word_data["id"]
@@ -1170,6 +1188,10 @@ async def submit_guess(
         # Отправляем обновленное состояние игры
         await send_game_state_update(room_code, db)
 
+        points_message = f"(+{total_points} очков)"
+        if time_bonus > 0:
+            points_message = f"(+{base_points} за правильный ответ, +{time_bonus} за скорость)"
+
         # Отправляем всем сообщение о правильной догадке
         async def broadcast_correct_guess(p_id: int, p_name: str, word: str):
             await manager.broadcast(
@@ -1178,10 +1200,12 @@ async def submit_guess(
                     "type": "correct_guess",
                     "player_id": p_id,
                     "word": word,
-                    "message": f"Игрок {p_name} правильно угадал слово: {word}",
+                    "message": f"Игрок {p_name} правильно угадал слово: {word} {points_message}",
                     "new_timer": True,
                     "timer_start": current_time,
                     "time_per_round": room.time_per_round,
+                    "points": total_points,
+                    "time_bonus": time_bonus,
                 },
             )
 
@@ -1189,7 +1213,7 @@ async def submit_guess(
             broadcast_correct_guess, player_id_correct, player_name_correct, old_word
         )
 
-        return {"correct": True, "message": "Поздравляем! Вы угадали слово."}
+        return {"correct": True, "message": f"Поздравляем! Вы угадали слово. {points_message}"}
     else:
         # Игрок не угадал слово
         player.wrong_answers += 1

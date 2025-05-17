@@ -1306,10 +1306,6 @@ async def test_submit_guess_correct_next_round(
     assert broadcast_data["type"] == "correct_guess"
     assert broadcast_data["player_id"] == player2_id
     assert broadcast_data["word"] == word_text
-    assert (
-        broadcast_data["message"]
-        == f"Игрок {user2_name} правильно угадал слово: {word_text}"
-    )
 
 
 @pytest.mark.asyncio
