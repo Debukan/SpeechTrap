@@ -76,7 +76,9 @@ class ConnectionManager:
             )
 
             success_count = 0
-            for client_id, websocket in list(self.active_connections[room_code].items()):
+            for client_id, websocket in list(
+                self.active_connections[room_code].items()
+            ):
                 if client_id != exclude_user_id and websocket != exclude_websocket:
                     try:
                         if isinstance(message, dict):

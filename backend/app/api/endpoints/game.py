@@ -11,6 +11,7 @@ from sqlalchemy.sql import func
 from typing import Dict, Any, List
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+import spacy
 
 from app.db.deps import get_db
 from app.models.word import WordWithAssociations, DifficultyEnum
@@ -27,6 +28,11 @@ from app.api.endpoints.words import (
 
 router = APIRouter()
 
+try:
+    nlp = spacy.load("ru_core_news_sm")
+except OSError:
+    nlp = spacy.blank("ru")
+
 # Словарь для хранения таймеров комнат
 room_timers = {}
 timer_tasks = {}
@@ -37,6 +43,7 @@ timer_lock = threading.RLock()
 active_periodic_updates = set()
 # Замок для доступа к списку обновлений
 updates_lock = threading.RLock()
+
 
 # Модели для API
 class GuessRequest(BaseModel):
@@ -77,8 +84,9 @@ async def send_game_state_update(room_code: str, db: Session):
 
     current_player = None
     explaining_player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
+        select(Player).where(
+            Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING
+        )
     )
 
     if explaining_player:
@@ -175,7 +183,7 @@ async def start_periodic_game_state_updates(room_code: str, db: Session):
     Запускает периодическую отправку состояния игры через WebSocket.
     """
     from app.db.deps import get_db
-    
+
     try:
         # Проверяем, что комната существует и игра идет
         db.expire_all()
@@ -185,34 +193,34 @@ async def start_periodic_game_state_updates(room_code: str, db: Session):
                 if room_code in active_periodic_updates:
                     active_periodic_updates.remove(room_code)
             return
-            
+
         with updates_lock:
             if room_code not in active_periodic_updates:
                 active_periodic_updates.add(room_code)
-        
+
         try:
             while True:
                 with updates_lock:
                     if room_code not in active_periodic_updates:
                         break
-                
+
                 # Получаем новую сессию для каждой итерации
                 session_generator = get_db()
                 try:
                     session = next(session_generator)
-                    
+
                     # Проверяем статус комнаты
                     room = session.scalar(select(Room).where(Room.code == room_code))
                     if not room or room.status != GameStatus.PLAYING:
                         break
-                    
+
                     # Проверяем, есть ли игроки в комнате
                     players_count = session.scalar(
                         select(func.count(Player.id)).where(Player.room_id == room.id)
                     )
                     if not players_count or players_count < 1:
                         break
-                    
+
                     sleep_time = min(3, max(1, 2 + (players_count - 2) * 0.5))
 
                     await send_game_state_update(room_code, session)
@@ -254,8 +262,9 @@ async def get_game_state(
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.user_id == current_user.id)
+        select(Player).where(
+            Player.room_id == room.id, Player.user_id == current_user.id
+        )
     )
 
     if not player:
@@ -275,8 +284,9 @@ async def get_game_state(
 
     current_player = None
     explaining_player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
+        select(Player).where(
+            Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING
+        )
     )
 
     if explaining_player:
@@ -371,7 +381,7 @@ async def start_game(
     with timer_lock:
         if room_code in room_timers:
             del room_timers[room_code]
-        
+
         if room_code in timer_tasks:
             try:
                 timer_tasks[room_code].cancel()
@@ -421,7 +431,9 @@ async def start_game(
         if room_code not in active_periodic_updates:
             active_periodic_updates.add(room_code)
             try:
-                background_tasks.add_task(start_periodic_game_state_updates, room_code, db)
+                background_tasks.add_task(
+                    start_periodic_game_state_updates, room_code, db
+                )
             except Exception as e:
                 active_periodic_updates.remove(room_code)
 
@@ -458,16 +470,19 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
     - db: Сессия базы данных (используется только для первоначальной проверки).
     """
     from app.db.deps import get_db
-    
+
     try:
         # Ждем необходимое время
         await asyncio.sleep(duration)
 
         # Проверяем, остался ли этот таймер активным
         with timer_lock:
-            if room_code not in timer_tasks or timer_tasks[room_code] != asyncio.current_task():
+            if (
+                room_code not in timer_tasks
+                or timer_tasks[room_code] != asyncio.current_task()
+            ):
                 return
-                
+
             # Очищаем информацию о таймере перед созданием нового
             if room_code in room_timers:
                 del room_timers[room_code]
@@ -489,7 +504,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
                 if room_code in timer_tasks:
                     del timer_tasks[room_code]
             return
-            
+
         if not use_existing_db:
             session_generator = get_db()
             try:
@@ -501,7 +516,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
                     if room_code in timer_tasks:
                         del timer_tasks[room_code]
                 return
-            
+
         try:
             room = session.scalar(select(Room).where(Room.code == room_code))
             if not room:
@@ -511,7 +526,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
                     if room_code in timer_tasks:
                         del timer_tasks[room_code]
                 return
-            
+
             if room.status != GameStatus.PLAYING:
                 with timer_lock:
                     if room_code in room_timers:
@@ -522,8 +537,9 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
 
             # Находим текущего объясняющего игрока
             current_player = session.scalar(
-                select(Player)
-                .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
+                select(Player).where(
+                    Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING
+                )
             )
 
             if not current_player:
@@ -541,7 +557,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
             players = session.scalars(
                 select(Player).where(Player.room_id == room.id).order_by(Player.id)
             ).all()
-            
+
             if not players or len(players) < 2:
                 with timer_lock:
                     if room_code in room_timers:
@@ -601,7 +617,9 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
             # Выбираем новое слово для следующего раунда
             if room.current_word_id:
                 word_data = get_next_word(
-                    exclude_id=room.current_word_id, difficulty=room.difficulty, db=session
+                    exclude_id=room.current_word_id,
+                    difficulty=room.difficulty,
+                    db=session,
                 )
                 if word_data and "id" in word_data:
                     room.current_word_id = word_data["id"]
@@ -618,7 +636,9 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
                 }
 
                 # Отправляем всем сообщение о смене игрока и обновлении таймера
-                user = session.scalar(select(User).where(User.id == next_player.user_id))
+                user = session.scalar(
+                    select(User).where(User.id == next_player.user_id)
+                )
                 user_name = user.name if user else "Неизвестный"
                 await manager.broadcast(
                     room_code,
@@ -640,7 +660,7 @@ async def start_round_timer(room_code: str, duration: int, db: Session):
                             timer_tasks[room_code].cancel()
                     except Exception as e:
                         pass
-                
+
                 timer_task = asyncio.create_task(
                     start_round_timer(room_code, room.time_per_round, session)
                 )
@@ -698,8 +718,9 @@ async def end_turn(
 
     # Находим текущего объясняющего игрока
     current_player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
+        select(Player).where(
+            Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING
+        )
     )
 
     if not current_player:
@@ -798,14 +819,14 @@ async def end_turn(
                 timer_tasks[room_code].cancel()
             except Exception:
                 pass
-                
+
         # Создаем новый таймер
         room_timers[room_code] = {
             "start_time": current_time,
             "duration": room.time_per_round,
             "end_time": current_time + room.time_per_round,
         }
-        
+
         timer_task = asyncio.create_task(
             start_round_timer(room_code, room.time_per_round, db)
         )
@@ -855,8 +876,9 @@ async def leave_game(
 
     # Находим игрока в комнате
     player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.user_id == current_user.id)
+        select(Player).where(
+            Player.room_id == room.id, Player.user_id == current_user.id
+        )
     )
 
     if not player:
@@ -937,9 +959,7 @@ async def leave_game(
                         await send_game_state_update(room_code, db)
                         state_update_sent_sync = True
 
-                last_player = db.scalar(
-                    select(Player).where(Player.room_id == room_id)
-                )
+                last_player = db.scalar(select(Player).where(Player.room_id == room_id))
                 if last_player:
                     if not is_waiting_room:
                         if last_player.score_total is None:
@@ -1017,8 +1037,9 @@ async def submit_guess(
 
     # Находим игрока в комнате
     player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.user_id == current_user.id)
+        select(Player).where(
+            Player.room_id == room.id, Player.user_id == current_user.id
+        )
     )
 
     if not player:
@@ -1050,8 +1071,9 @@ async def submit_guess(
         player.correct_answers += 1
 
         explaining_player = db.scalar(
-            select(Player)
-            .where(Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING)
+            select(Player).where(
+                Player.room_id == room.id, Player.role == PlayerRole.EXPLAINING
+            )
         )
 
         if explaining_player:
@@ -1132,14 +1154,14 @@ async def submit_guess(
                     timer_tasks[room_code].cancel()
                 except Exception:
                     pass
-                    
+
             # Создаем новый таймер
             room_timers[room_code] = {
                 "start_time": current_time,
                 "duration": room.time_per_round,
                 "end_time": current_time + room.time_per_round,
             }
-            
+
             timer_task = asyncio.create_task(
                 start_round_timer(room_code, room.time_per_round, db)
             )
@@ -1219,14 +1241,80 @@ async def send_chat_message(
 
     # Проверяем, что пользователь находится в комнате
     player = db.scalar(
-        select(Player)
-        .where(Player.room_id == room.id, Player.user_id == current_user.id)
+        select(Player).where(
+            Player.room_id == room.id, Player.user_id == current_user.id
+        )
     )
 
     if not player:
         raise HTTPException(
             status_code=403, detail="Вы не являетесь участником этой комнаты"
         )
+
+    if player.role == PlayerRole.EXPLAINING and room.current_word_id:
+        message_lower = message_data.message.lower()
+        try:
+            word_data = get_word_by_id_internal(room.current_word_id, db)
+            if word_data:
+                current_word = word_data["word"].lower()
+                associations = [assoc.lower() for assoc in word_data["associations"]]
+
+                message_doc = nlp(message_lower)
+
+                message_lemmas = {
+                    token.lemma_
+                    for token in message_doc
+                    if not token.is_stop and len(token.text) > 3
+                }
+                message_tokens = [token.text for token in message_doc]
+
+                current_word_doc = nlp(current_word)
+                current_word_lemma = (
+                    current_word_doc[0].lemma_
+                    if len(current_word_doc) > 0
+                    else current_word
+                )
+
+                if (
+                    current_word in message_lower
+                    or current_word_lemma in message_lemmas
+                ):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Запрещено использовать загаданное слово в сообщении",
+                    )
+
+                forbidden_words = []
+
+                association_lemmas = {}
+                for assoc in associations:
+                    assoc_doc = nlp(assoc)
+                    if len(assoc_doc) > 0:
+                        assoc_lemma = assoc_doc[0].lemma_
+                        association_lemmas[assoc_lemma] = assoc
+
+                for lemma in message_lemmas:
+                    if lemma in association_lemmas:
+                        forbidden_words.append(association_lemmas[lemma])
+
+                for token in message_tokens:
+                    if token in associations and token not in forbidden_words:
+                        forbidden_words.append(token)
+
+                for assoc in associations:
+                    if assoc in message_lower and assoc not in forbidden_words:
+                        forbidden_words.append(assoc)
+
+                if forbidden_words:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Запрещено использовать слова: {', '.join(set(forbidden_words))}",
+                    )
+
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            pass
 
     chat_message = {
         "type": "chat_message",

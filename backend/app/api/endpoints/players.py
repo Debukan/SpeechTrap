@@ -34,7 +34,9 @@ def process_player_answer(
     if not player:
         raise HTTPException(status_code=404, detail="Игрок не найден")
 
-    word = db.scalar(select(WordWithAssociations).where(WordWithAssociations.id == word_id))
+    word = db.scalar(
+        select(WordWithAssociations).where(WordWithAssociations.id == word_id)
+    )
     if not word:
         raise HTTPException(status_code=404, detail="Слово не найдено")
 

@@ -509,6 +509,25 @@ const GameBoard: React.FC = () => {
     try {
       await axios.post(`${apiBaseUrl}/api/game/${roomCode}/chat`, { message });
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 400) {
+          toast.error('Сообщение не отправлено', {
+            description: error.response.data.detail || 'Вы использовали запрещенные слова в сообщении',
+            duration: 4000,
+          });
+        } else {
+          toast.error('Ошибка при отправке сообщения', {
+            description: error.response.data.detail || 'Попробуйте еще раз',
+            duration: 4000,
+          });
+        }
+      } else {
+        toast.error('Ошибка соединения', {
+          description: 'Не удалось отправить сообщение',
+          duration: 4000,
+        });
+      }
+      
       if (isDev()) {
         console.error('Ошибка при отправке сообщения в чат:', error);
       }

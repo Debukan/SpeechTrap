@@ -50,12 +50,10 @@ async def create_room(
             status_code=400, detail="Комната с таким кодом уже существует"
         )
 
-    active_player = (
-        db.scalar(
-            select(Player)
-            .join(Room)
-            .where(Player.user_id == current_user.id, Room.status != GameStatus.FINISHED)
-        )
+    active_player = db.scalar(
+        select(Player)
+        .join(Room)
+        .where(Player.user_id == current_user.id, Room.status != GameStatus.FINISHED)
     )
     if active_player:
         room = db.scalar(select(Room).where(Room.id == active_player.room_id))
@@ -239,11 +237,8 @@ async def join_room_by_code(
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     # Проверка, не присоединен ли пользователь уже к комнате
-    existing_player = (
-        db.scalar(
-            select(Player)
-            .where(Player.user_id == user_id, Player.room_id == room.id)
-        )
+    existing_player = db.scalar(
+        select(Player).where(Player.user_id == user_id, Player.room_id == room.id)
     )
     if existing_player:
         raise HTTPException(status_code=400, detail="Пользователь уже в комнате")
@@ -326,10 +321,9 @@ async def leave_room(
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Находим игрока в комнате
-    player = (
-        db.scalar(
-            select(Player)
-            .where(Player.room_id == room.id, Player.user_id == current_user.id)
+    player = db.scalar(
+        select(Player).where(
+            Player.room_id == room.id, Player.user_id == current_user.id
         )
     )
 
@@ -398,10 +392,9 @@ async def send_lobby_chat_message(
         raise HTTPException(status_code=404, detail="Комната не найдена")
 
     # Проверяем, что пользователь находится в комнате
-    player = (
-        db.scalar(
-            select(Player)
-            .where(Player.room_id == room.id, Player.user_id == current_user.id)
+    player = db.scalar(
+        select(Player).where(
+            Player.room_id == room.id, Player.user_id == current_user.id
         )
     )
 

@@ -33,7 +33,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     # Проверяем, существует ли пользователь с таким email
     existing_user = db.scalar(select(User).where(User.email == user_data.email))
-    if (existing_user):
+    if existing_user:
         raise HTTPException(
             status_code=400, detail="Пользователь с таким email уже существует"
         )
@@ -136,8 +136,9 @@ async def update_profile(
     if user_update.email is not None:
         # Проверяем, не занята ли новая почта
         existing_user = db.scalar(
-            select(User)
-            .where(User.email == user_update.email, User.id != current_user.id)
+            select(User).where(
+                User.email == user_update.email, User.id != current_user.id
+            )
         )
         if existing_user:
             raise HTTPException(

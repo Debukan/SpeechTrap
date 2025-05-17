@@ -28,8 +28,8 @@ if log_file_path:
 handlers.append(logging.StreamHandler())
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=handlers
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=handlers,
 )
 logger = logging.getLogger("app")
 

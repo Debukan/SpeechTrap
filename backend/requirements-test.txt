@@ -16,3 +16,4 @@ pytest-asyncio
 httpx
 websockets>=10.0
 uvicorn[standard]
+spacy>=3.7.0

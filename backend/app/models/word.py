@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import Column, JSON
 from app.models.base import Base
 
+
 class DifficultyEnum(str, Enum):
     basic = "basic"
     medium = "medium"
@@ -35,4 +36,6 @@ class WordWithAssociations(SQLModel, table=True):
                 (self.success_rate * (self.times_used - 1)) + 1
             ) / self.times_used
         else:
-            self.success_rate = (self.success_rate * (self.times_used - 1)) / self.times_used
+            self.success_rate = (
+                self.success_rate * (self.times_used - 1)
+            ) / self.times_used
