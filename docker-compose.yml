@@ -1,0 +1,114 @@
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - speechtrap_postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+          sh -c "
+          python -m app.db.init_db &&
+          python -m app.db.init_data &&
+          uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+    volumes:
+      - ./backend:/app
+      - ./logs/backend:/var/log/app
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+    depends_on:
+      - db
+    networks:
+      - app-network
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./logs/frontend:/var/log/app
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8001
+      - VITE_DEV_MODE=true
+    command: npm run dev
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  test-db:
+    image: postgres:13
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/tests/.env.test
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
+  
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - backend
+      - test-db
+    env_file:
+      - ./backend/tests/.env.test
+    restart: "no"
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo 'Ожидание тестовой базы данных...' &&
+        python -c '
+      import time, psycopg2, os
+
+      for i in range(30):
+          try:
+              conn = psycopg2.connect(
+                  dbname=os.getenv(\"POSTGRES_DB\"),
+                  user=os.getenv(\"POSTGRES_USER\"),
+                  password=os.getenv(\"POSTGRES_PASSWORD\"),
+                  host=os.getenv(\"POSTGRES_HOST\")
+              )
+              conn.close()
+              print(\"Тестовая база данных готова!\")
+              break
+          except psycopg2.OperationalError as e:
+              print(f\"Attempt {i+1}/30: {e}\")
+              time.sleep(1)
+              ' &&
+              pytest -v
+            "
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  speechtrap_postgres_data:
+  postgres_test_data:
+  app_logs:
+    driver: local

@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - speechtrap_postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
+    env_file:
+      - .env
+    ports:
+      - "5434:5432"
+    networks:
+      - speechtrap-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+        sh -c "
+        python -m app.db.init_db &&
+        python -m app.db.init_data &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1"
+    volumes:
+      - ./backend:/app
+      - ./logs/backend:/var/log/app
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - speechtrap-network
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - /var/www/speechtrap/frontend/build:/frontend/build
+    command: sh -c "npm run build && cp -r build/* /frontend/build"
+    depends_on:
+      - backend
+    networks:
+      - speechtrap-network
+
+networks:
+  speechtrap-network:
+    driver: bridge
+
+volumes:
+  speechtrap_postgres_data:
+  postgres_test_data:
+  app_logs:
+    driver: local

@@ -1,0 +1,75 @@
+.profile-icon {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
+    flex-shrink: 0
+}
+
+.profile-icon-button {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px;
+    min-height: 40px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 10px rgba(0, 123, 255, 0.3);
+    overflow: hidden;
+}
+
+.profile-icon-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.5);
+}
+
+.profile-icon-button span {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.profile-icon:hover {
+    background-color: #0056b3;
+}
+
+.profile-icon-container {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-name {
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+.logout-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: #dc3545;
+    color: white;
+}
+
+.logout-button:hover {
+    background-color: #c82333;
+}

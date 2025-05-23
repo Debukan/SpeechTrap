@@ -1,0 +1,176 @@
+.menu-container {
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.menu-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.07);
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #90caf9;
+    color: white;
+    cursor: pointer;
+    margin-top: 5px;
+    font-size: 16px;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+    background: linear-gradient(90deg, #0056b3, #004494);
+    transform: translateY(-2px);
+}
+
+.login-prompt {
+    margin-top: 15px;
+}
+
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@keyframes pulse-speech {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.speech-bubble-decoration {
+    animation: pulse-speech 4s ease-in-out infinite;
+}
+
+.menu-button {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.menu-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+    z-index: -1;
+}
+
+.menu-button:hover::before {
+    left: 100%;
+}
+
+.menu-button:hover {
+    transform: translateY(-2px);
+}
+
+.menu-button:active {
+    transform: translateY(1px);
+}
+
+.floating-word {
+    position: absolute;
+    color: rgba(14, 165, 233, 0.2);
+    pointer-events: none;
+    animation: float-word 25s linear infinite;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+@keyframes float-word {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.3;
+    }
+    90% {
+        opacity: 0.3;
+    }
+    100% {
+        transform: translateY(-100px) rotate(5deg);
+        opacity: 0;
+    }
+}
+
+.taboo-card {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: 100%;
+}
+
+.taboo-card:hover {
+    transform: translateY(-5px) rotate(0) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.taboo-card-header {
+    background: linear-gradient(90deg, #3b82f6, #4f46e5);
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.taboo-card-word {
+    padding: 20px 10px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: center;
+    color: #1e40af;
+    letter-spacing: 1px;
+}
+
+.taboo-card-forbidden {
+    padding: 0 15px 15px;
+}
+
+.taboo-card-forbidden-item {
+    color: #ef4444;
+    text-decoration: line-through;
+    padding: 3px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    position: relative;
+}
+
+.taboo-card-forbidden-item::before {
+    content: "✕";
+    padding-right: 5px;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .menu-container {
+        margin: 0 16px;
+    }
+    .taboo-card {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .menu-container {
+        padding: 1rem;
+    }
+}
