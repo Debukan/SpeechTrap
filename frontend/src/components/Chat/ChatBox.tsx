@@ -14,10 +14,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({ isExplaining, messages, onSendMessage
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Прокрутка чата при новых сообщениях
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // // Прокрутка чата при новых сообщениях`
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

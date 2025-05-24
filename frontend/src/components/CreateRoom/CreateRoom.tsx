@@ -199,7 +199,7 @@ export default function CreateRoom() {
                   </div>
                   <Slider
                     min={2}
-                    max={8}
+                    max={20}
                     step={1}
                     value={[maxPlayers]}
                     onValueChange={([val]: number[]) => setMaxPlayers(val)}
@@ -207,7 +207,7 @@ export default function CreateRoom() {
                   />
                   <div className="flex justify-between text-xs text-blue-500 mt-1">
                     <span>2</span>
-                    <span>8</span>
+                    <span>20</span>
                   </div>
                 </div>
 
