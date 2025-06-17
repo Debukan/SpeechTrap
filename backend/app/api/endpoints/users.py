@@ -95,7 +95,7 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
 
     # Генерация JWT токена
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=timedelta(minutes=30)
+        data={"sub": user.email}
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
